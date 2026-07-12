@@ -34,8 +34,7 @@ scheduler (main.py)
 
 The production instance at [inbrief.info](https://inbrief.info) currently tracks **94 sources** across four categories. The engine ships with an empty source table — use this catalog as a starting point and add the ones you want via `admin_rss.py`.
 
-<details>
-<summary><b>📰 News & blogs — 16 RSS feeds</b></summary>
+### 📰 News & blogs — 16 RSS feeds
 
 | Source | Feed |
 |---|---|
@@ -56,10 +55,8 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 | AI News (artificialintelligence-news.com) | `https://www.artificialintelligence-news.com/feed/` |
 | Machine Learning Mastery | `https://machinelearningmastery.com/feed/` |
 
-</details>
 
-<details>
-<summary><b>💬 Discussion — Hacker News, 16 Reddit sources, 47 X sources</b></summary>
+### 💬 Discussion — Hacker News, 16 Reddit sources, 47 X sources
 
 **Hacker News** — front page via `https://news.ycombinator.com/rss`, with full comment-thread extraction and engagement gates (min upvotes / comments).
 
@@ -83,10 +80,8 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 
 **X.com — 12 keyword searches**: `AI`, `Anthropic`, `OpenAI`, `ChatGPT`, `Gemini`, `LLM`, `claude code`, `codex`, `OpenClaw`, `prompt ai`, `agent ai`, `skill ai`
 
-</details>
 
-<details>
-<summary><b>🎬 Video — 13 YouTube channels (with transcript extraction)</b></summary>
+### 🎬 Video — 13 YouTube channels (with transcript extraction)
 
 | Channel | Focus |
 |---|---|
@@ -104,14 +99,11 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 | [Every Inc](https://www.youtube.com/@EveryInc) | AI & work essays |
 | [Data Driven NYC](https://www.youtube.com/@DataDrivenNYC) | Data/AI talks |
 
-</details>
 
-<details>
-<summary><b>🚀 Open source — GitHub Trending</b></summary>
+### 🚀 Open source — GitHub Trending
 
 Weekly [GitHub Trending](https://github.com/trending?since=weekly) repositories (top 25 by default), each summarized from its README and repo metadata. Configured in `config.yaml` under `fetching.github_trending` — no source entry needed.
 
-</details>
 
 ## Requirements
 

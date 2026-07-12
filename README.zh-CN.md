@@ -6,9 +6,7 @@
 
 它持续从 RSS、Hacker News、Reddit、X（Twitter）、YouTube 和 GitHub Trending 拉取 AI 相关内容，逐条经过 LLM 流水线处理——相关性过滤、中英双语摘要、标签提取、重要性评分——再做两级去重，最终把精选结果写入 PostgreSQL。
 
-[![观看 60 秒演示视频](media/demo-poster.jpg)](https://cdn.jsdelivr.net/gh/frankzch/ai-news-brief@main/media/demo.mp4)
-
-<p align="center">▶ <a href="https://cdn.jsdelivr.net/gh/frankzch/ai-news-brief@main/media/demo.mp4">观看 60 秒演示视频</a></p>
+https://github.com/user-attachments/assets/4c2a209e-46dd-422a-ae8f-82d92c73f68c
 
 ```
 调度器 (main.py)
@@ -32,8 +30,7 @@
 
 [inbrief.info](https://inbrief.info) 生产实例目前追踪 **94 个信息源**，分四个类目。引擎本身不预置任何源——可以参考这份目录，用 `admin_rss.py` 添加你需要的部分。
 
-<details>
-<summary><b>📰 新闻与博客 — 16 个 RSS 源</b></summary>
+### 📰 新闻与博客 — 16 个 RSS 源
 
 | 来源 | Feed |
 |---|---|
@@ -54,10 +51,8 @@
 | AI News（artificialintelligence-news.com） | `https://www.artificialintelligence-news.com/feed/` |
 | Machine Learning Mastery | `https://machinelearningmastery.com/feed/` |
 
-</details>
 
-<details>
-<summary><b>💬 社媒讨论 — Hacker News、16 个 Reddit 源、47 个 X 源</b></summary>
+### 💬 社媒讨论 — Hacker News、16 个 Reddit 源、47 个 X 源
 
 **Hacker News** — 首页 `https://news.ycombinator.com/rss`，抓取完整评论区，按点赞/评论数设互动门槛。
 
@@ -81,10 +76,8 @@
 
 **X.com — 12 个关键词搜索**：`AI`、`Anthropic`、`OpenAI`、`ChatGPT`、`Gemini`、`LLM`、`claude code`、`codex`、`OpenClaw`、`prompt ai`、`agent ai`、`skill ai`
 
-</details>
 
-<details>
-<summary><b>🎬 视频 — 13 个 YouTube 频道（含字幕提取）</b></summary>
+### 🎬 视频 — 13 个 YouTube 频道（含字幕提取）
 
 | 频道 | 定位 |
 |---|---|
@@ -102,14 +95,11 @@
 | [Every Inc](https://www.youtube.com/@EveryInc) | AI 与工作方式 |
 | [Data Driven NYC](https://www.youtube.com/@DataDrivenNYC) | 数据/AI 演讲 |
 
-</details>
 
-<details>
-<summary><b>🚀 开源 — GitHub Trending</b></summary>
+### 🚀 开源 — GitHub Trending
 
 每周 [GitHub Trending](https://github.com/trending?since=weekly) 仓库（默认前 25 个），基于 README 和仓库元数据生成摘要。在 `config.yaml` 的 `fetching.github_trending` 中配置，无需添加源条目。
 
-</details>
 
 ## 环境要求
 
