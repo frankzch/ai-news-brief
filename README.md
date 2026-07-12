@@ -4,13 +4,9 @@
 
 The AI news collection and curation pipeline that powers [inbrief.info](https://inbrief.info).
 
-It continuously pulls AI-related content from RSS feeds, Hacker News, Reddit, X (Twitter), YouTube and GitHub Trending, then runs every item through an LLM pipeline — relevance filtering, bilingual (EN/ZH) summarization, tag extraction, importance scoring — deduplicates it in two stages, and stores the curated result in PostgreSQL.
-
-
-
 https://github.com/user-attachments/assets/91d0d4e4-3557-4c88-8ef1-ff7b85a1ab0d
 
-
+It continuously pulls AI-related content from RSS feeds, Hacker News, Reddit, X (Twitter), YouTube and GitHub Trending, then runs every item through an LLM pipeline — relevance filtering, bilingual (EN/ZH) summarization, tag extraction, importance scoring — deduplicates it in two stages, and stores the curated result in PostgreSQL.
 
 ```
 scheduler (main.py)
