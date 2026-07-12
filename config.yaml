@@ -1,0 +1,64 @@
+llm:
+  base_url: "https://api.deepseek.com/v1" # Any OpenAI-compatible endpoint. Override via INBRIEF_LLM_BASE_URL
+  api_key: ""  # Set via DEEPSEEK_API_KEY / INBRIEF_LLM_API_KEY
+  model_name: "deepseek-v4-flash"
+  scoring_model_name: "deepseek-v4-flash"   # 用于文章关联度评分（更快）
+
+schedule:
+  interval_hours: 2 # Run every 2 hours
+  sleep_window:
+    start_hour: 12          # 睡眠窗口最早开始时间 (本地24小时制)
+    end_hour: 20            # 睡眠窗口必须结束的最晚时间
+    duration_min_hours: 5   # 窗口最短持续时长 (小时)
+    duration_max_hours: 7   # 窗口最长持续时长 (小时)
+
+supabase:
+  db_url: "" # Set via INBRIEF_SUPABASE_DB_URL — any Postgres with pgvector works
+
+fetching:
+  network_timeout: 90      # 所有网络请求超时：RSS、文章抓取 (秒)
+  ai_timeout: 90           # LLM API 超时 (秒)
+  max_input_chars: 80000   # 送入 LLM 的最大字符数
+  concurrency: 5           # 文章处理并发数
+  max_entries: 50          # 单次最多处理文章数
+  article_max_age_days: 1  # 普通文章最大年龄 (天)，过旧跳过
+  hf_daily_top_n: 5        # HF 每周趋势论文：按 (HF 点赞 + GitHub star) 排名后只保留前 N 篇
+
+  # ===== 社媒 / 讨论类来源通用 (HN / Reddit / Twitter) =====
+  discussion:
+    min_likes: 100          # 最小点赞 / upvotes
+    min_replies: 50         # 最小评论 / replies
+    max_age_days: 3         # 主贴最大发布天数
+    max_update_hours: 24    # 最新回复须在此时间内 (小时)
+    min_age_hours: 2        # 帖子最小存在时间 (小时)，太新互动少
+    search_delay_min: 10    # 关键词/搜索之间间隔 (秒)
+    search_delay_max: 30
+    post_delay_min: 5       # 帖子之间间隔 (秒)
+    post_delay_max: 10
+
+  reddit:
+    max_per_run: 50           # 单次跑最大 Reddit 帖子数
+    max_posts_per_keyword: 10 # 每个 keyword 搜索源最多保留的条目数
+
+  twitter:
+    enabled: true
+    max_per_run: 50           # 单次跑最大 Twitter 帖子数
+    max_posts_per_keyword: 10 # 每个关键词进入详情页上限
+
+  youtube:                    # 单独保留，YouTube 风控严格
+    max_per_run: 6
+    delay_min: 30
+    delay_max: 60
+
+  github_trending:
+    enabled: true
+    max_repos: 25              # 最多处理的 trending 项目数
+    since: "weekly"            # daily/weekly/monthly
+  playwright_domains:
+    - "openai.com"
+    - "machinelearningmastery.com"
+    - "technologyreview.com"
+
+cleanup:
+  article_retention_days: 7              # 文章保留天数，超过则清理
+  tag_stats_retention_days: 90           # 热点标签统计保留天数，超过则清理

@@ -1,0 +1,32 @@
+openai>=1.0.0
+feedparser>=6.0.0
+trafilatura>=1.6.0
+schedule>=1.2.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Embedding model for semantic filtering (local, all-MiniLM-L6-v2)
+sentence-transformers>=2.2.0
+numpy>=1.24.0
+
+# LSH for content deduplication
+simhash>=2.1.0
+
+# Database (PostgreSQL + pgvector)
+psycopg2-binary>=2.9.0
+pgvector>=0.3.0
+
+# HTTP client with better TLS compatibility
+httpx>=0.24.0
+
+# Browser automation for anti-bot bypass (Reddit / X / YouTube)
+playwright>=1.40.0
+
+# Advanced scraping (TLS impersonation & browser fallback)
+curl_cffi>=0.6.0
+DrissionPage>=4.0.0
+
+# Aliyun Content Security (Green) - optional text moderation before article ingest
+alibabacloud_green20220302>=2.0.0
