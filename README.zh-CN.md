@@ -6,7 +6,9 @@
 
 它持续从 RSS、Hacker News、Reddit、X（Twitter）、YouTube 和 GitHub Trending 拉取 AI 相关内容，逐条经过 LLM 流水线处理——相关性过滤、中英双语摘要、标签提取、重要性评分——再做两级去重，最终把精选结果写入 PostgreSQL。
 
-https://github.com/frankzch/ai-news-brief/raw/main/media/demo.mp4
+[![观看 60 秒演示视频](media/demo-poster.jpg)](https://github.com/frankzch/ai-news-brief/raw/main/media/demo.mp4)
+
+<p align="center">▶ <a href="https://github.com/frankzch/ai-news-brief/raw/main/media/demo.mp4">观看 60 秒演示视频</a></p>
 
 ```
 调度器 (main.py)
