@@ -1,4 +1,4 @@
-# InBrief Engine
+# AI News Brief
 
 [English](README.md) | **中文**
 
