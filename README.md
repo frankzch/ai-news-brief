@@ -147,6 +147,23 @@ python main.py         # scheduler mode: runs every schedule.interval_hours
 
 Models, timeouts, engagement thresholds, per-platform quotas and retention are all in [config.yaml](config.yaml).
 
+## Query it from your AI agent — no self-hosting
+
+Don't want to run the pipeline yourself? The same curated feed is available as an **agent skill** that talks to the hosted [inbrief.info](https://inbrief.info) API — drop it into Claude Code / Codex / OpenClaw / Antigravity and just ask in plain English. No keys, no scraping, works out of the box.
+
+```bash
+# Claude Code (other agents: swap the target dir, e.g. ~/.codex/skills, ~/.agents/skills)
+git clone https://github.com/frankzch/ai-news-skill.git ~/.claude/skills/ai-news-skill
+```
+
+The agent turns your intent into precise filters (category, source, time range, count, summary length, language):
+
+- *"AI videos from top KOLs in the past 5 days, exclude Fireship."*
+- *"Today's AI news, but drop TechReview."*
+- *"Reddit AI discussions from the past 3 days, long summaries."*
+
+Guests get up to 3 items per request; sign up free at [inbrief.info](https://inbrief.info) for more. Full details: **[github.com/frankzch/ai-news-skill](https://github.com/frankzch/ai-news-skill)**.
+
 ## Notes
 
 - Reddit / X / YouTube fetching drives a real Chromium via Playwright. On first run you may be prompted to log in once in the opened browser window; the session persists in `data/playwright_profile` (git-ignored, stays on your machine).

@@ -143,6 +143,23 @@ python main.py         # 调度模式：每 schedule.interval_hours 小时执行
 
 模型、超时、互动门槛、各平台配额与数据保留策略均在 [config.yaml](config.yaml) 中配置。
 
+## 用 AI Agent 直接查询 —— 无需自建
+
+不想自己跑这套流水线?同一份精选信息流还提供一个 **agent skill**,直连托管的 [inbrief.info](https://inbrief.info) API —— 把它装进 Claude Code / Codex / OpenClaw / Antigravity,用自然语言提问即可。无需密钥、无需抓取,开箱即用。
+
+```bash
+# Claude Code（其他 agent 改目标目录即可，如 ~/.codex/skills、~/.agents/skills）
+git clone https://github.com/frankzch/ai-news-skill.git ~/.claude/skills/ai-news-skill
+```
+
+Agent 会把你的意图翻译成精确的过滤条件（类目、来源、时间范围、条数、摘要长度、语言）：
+
+- *"过去 5 天头部 KOL 发布的 AI 视频，排除 Fireship。"*
+- *"今天的 AI 新闻，但去掉 TechReview。"*
+- *"过去 3 天 Reddit 的 AI 讨论，要长摘要。"*
+
+访客每次请求最多返回 3 条；在 [inbrief.info](https://inbrief.info) 免费注册可解锁更多。完整说明见 **[github.com/frankzch/ai-news-skill](https://github.com/frankzch/ai-news-skill)**。
+
 ## 说明
 
 - Reddit / X / YouTube 采集通过 Playwright 驱动真实 Chromium。首次运行可能需要在弹出的浏览器窗口中手动登录一次；会话持久化在 `data/playwright_profile`（已被 git 忽略，仅保存在本机）。
