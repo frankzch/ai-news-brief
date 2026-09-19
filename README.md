@@ -2,7 +2,7 @@
 
 **English** | [中文](README.zh-CN.md)
 
-The AI news collection and curation pipeline that powers [inbrief.info](https://inbrief.info).
+An open-source, self-hostable **AI news aggregator** that turns 94 sources — AI lab blogs, Hacker News, Reddit, 35 AI builders on X, 13 YouTube channels (via transcripts) and GitHub Trending — into a deduplicated **daily AI digest** with English and Chinese summaries. It is the engine behind [inbrief.info](https://inbrief.info); if you just want to read the digest, use the site or the [agent skill](https://github.com/frankzch/ai-news-skill) instead of self-hosting.
 
 
 
@@ -169,6 +169,17 @@ Guests get up to 3 items per request; sign up free at [inbrief.info](https://inb
 - Reddit / X / YouTube fetching drives a real Chromium via Playwright. On first run you may be prompted to log in once in the opened browser window; the session persists in `data/playwright_profile` (git-ignored, stays on your machine).
 - Summaries are stored bilingually (`*_en` / `*_zh` columns). If you only need one language you can simply ignore the other.
 - The `data/` directory holds runtime state (browser profile, cookies, daily flags) and is never committed.
+
+## FAQ
+
+**How is this different from an RSS reader?**
+An RSS reader shows every item from every feed. This pipeline also pulls Reddit, X, Hacker News comment threads and YouTube transcripts, drops off-topic and low-engagement items, merges duplicates of the same story across sources, and writes a short summary and importance score for each one.
+
+**Which LLM does it need?**
+Any OpenAI-compatible API; DeepSeek is the default. Set the model and key in `.env` / [config.yaml](config.yaml).
+
+**Can I read the digest without self-hosting?**
+Yes. The same feed is free to browse at [inbrief.info](https://inbrief.info), or query it from Claude Code / Codex with the [agent skill](https://github.com/frankzch/ai-news-skill).
 
 ## License
 

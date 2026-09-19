@@ -2,7 +2,7 @@
 
 [English](README.md) | **中文**
 
-为 [inbrief.info](https://inbrief.info) 提供动力的 AI 资讯采集与精选流水线。
+开源、可自建的 **AI 新闻聚合器**：把 94 个信息源——AI 大厂博客、Hacker News、Reddit、X 上 35 位 AI 从业者、13 个 YouTube 频道（基于字幕）和 GitHub Trending——整理成去重后的**每日 AI 资讯摘要**，中英双语。它是 [inbrief.info](https://inbrief.info) 背后的引擎；只想看摘要的话，直接用网站或 [Agent Skill](https://github.com/frankzch/ai-news-skill)，不必自己部署。
 
 它持续从 RSS、Hacker News、Reddit、X（Twitter）、YouTube 和 GitHub Trending 拉取 AI 相关内容，逐条经过 LLM 流水线处理——相关性过滤、中英双语摘要、标签提取、重要性评分——再做两级去重，最终把精选结果写入 PostgreSQL。
 
@@ -165,6 +165,17 @@ Agent 会把你的意图翻译成精确的过滤条件（类目、来源、时�
 - Reddit / X / YouTube 采集通过 Playwright 驱动真实 Chromium。首次运行可能需要在弹出的浏览器窗口中手动登录一次；会话持久化在 `data/playwright_profile`（已被 git 忽略，仅保存在本机）。
 - 摘要按双语存储（`*_en` / `*_zh` 字段），只需要单语言时忽略另一列即可。
 - `data/` 目录存放运行时状态（浏览器 profile、cookies、每日标志），不会被提交。
+
+## 常见问题
+
+**和 RSS 阅读器有什么区别？**
+RSS 阅读器会原样列出每个订阅源的每一条。本流水线还会抓取 Reddit、X、Hacker News 评论区和 YouTube 字幕，剔除离题和低热度内容，把不同来源里的同一条新闻合并去重，并为每条写出摘要和重要性评分。
+
+**需要什么大模型？**
+任意 OpenAI 兼容接口，默认 DeepSeek。在 `.env` / [config.yaml](config.yaml) 里配置模型和密钥。
+
+**不自己部署能看到这些摘要吗？**
+能。同一份内容可在 [inbrief.info](https://inbrief.info) 免费浏览，也可以用 [Agent Skill](https://github.com/frankzch/ai-news-skill) 在 Claude Code / Codex 里直接查询。
 
 ## 许可证
 
