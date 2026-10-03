@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { Browse } from "./Browse";
@@ -88,5 +88,111 @@ describe("Browse list", () => {
     await userEvent.click(screen.getByRole("button", { name: /retry/i }));
     expect(await screen.findByText("First")).toBeInTheDocument();
     expect(articleCalls(fetchFn)).toHaveLength(2);
+  });
+});
+
+describe("Browse filters", () => {
+  const LIST = { articles: [art("a", "First")], total: 1 };
+
+  it("category tabs filter the list and update the URL", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    await screen.findByText("First");
+    const group = screen.getByRole("group", { name: /category/i });
+    expect(within(group).getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "All",
+      "news",
+      "discussion",
+      "video",
+      "opensource",
+    ]);
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "video" }));
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?category=video&limit=30&offset=0"));
+    expect(screen.getByTestId("search")).toHaveTextContent("?category=video");
+    expect(screen.getByRole("button", { name: "video" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: "All" }));
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent(/^$/));
+  });
+
+  it("tag chips come from /api/tags and clicking filters; clicking again clears", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    const chip = await screen.findByRole("button", { name: /agents/ });
+    await userEvent.click(chip);
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?tag=agents&limit=30&offset=0"));
+    expect(screen.getByTestId("search")).toHaveTextContent("?tag=agents");
+    expect(screen.getByRole("button", { name: /agents/ })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(screen.getByRole("button", { name: /agents/ }));
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent(/^$/));
+  });
+
+  it("shows an active tag from the URL even when it is not in the tag list", async () => {
+    stubApi(LIST);
+    renderBrowse("/articles?tag=obscure");
+    expect(await screen.findByRole("button", { name: /obscure/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("still lists articles when /api/tags fails", async () => {
+    stubApi(LIST, (p) => (p === "/api/tags" ? json({ detail: "x" }, 500) : undefined));
+    renderBrowse();
+    expect(await screen.findByText("First")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("category, tag and search combine into one request and one URL", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    await userEvent.click(await screen.findByRole("button", { name: "news" }));
+    await userEvent.click(await screen.findByRole("button", { name: /llm/ }));
+    await userEvent.type(screen.getByRole("searchbox"), "gpt");
+    const expected = "/api/articles?category=news&tag=llm&q=gpt&limit=30&offset=0";
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain(expected));
+    expect(screen.getByTestId("search")).toHaveTextContent("?category=news&tag=llm&q=gpt");
+  });
+
+  it("restores filters from a shared URL, including the search box", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse("/articles?category=opensource&tag=llm&q=rust");
+    await screen.findByText("First");
+    expect(articleCalls(fetchFn)).toEqual(["/api/articles?category=opensource&tag=llm&q=rust&limit=30&offset=0"]);
+    expect(screen.getByRole("searchbox")).toHaveValue("rust");
+    expect(screen.getByRole("button", { name: "opensource" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("ignores an unknown category in the URL", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse("/articles?category=bogus");
+    await screen.findByText("First");
+    expect(articleCalls(fetchFn)).toEqual(["/api/articles?limit=30&offset=0"]);
+  });
+
+  it("debounces search typing into a single request", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    await screen.findByText("First");
+    await userEvent.type(screen.getByRole("searchbox"), "abc");
+    expect(articleCalls(fetchFn)).toHaveLength(1);
+    await waitFor(() => expect(articleCalls(fetchFn)).toHaveLength(2));
+    expect(articleCalls(fetchFn)[1]).toContain("q=abc");
+  });
+
+  it("Enter commits the search immediately", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    await screen.findByText("First");
+    await userEvent.type(screen.getByRole("searchbox"), "xyz{Enter}");
+    expect(screen.getByTestId("search")).toHaveTextContent("?q=xyz");
+    await waitFor(() => expect(articleCalls(fetchFn).some((p) => p.includes("q=xyz"))).toBe(true));
+  });
+
+  it("a category click during the search debounce is not overwritten by the pending search", async () => {
+    const fetchFn = stubApi(LIST);
+    renderBrowse();
+    await screen.findByText("First");
+    await userEvent.type(screen.getByRole("searchbox"), "gpt");
+    await userEvent.click(screen.getByRole("button", { name: "video" }));
+    await waitFor(() => expect(articleCalls(fetchFn).some((p) => p.includes("category=video") && p.includes("q=gpt"))).toBe(true));
+    expect(screen.getByTestId("search")).toHaveTextContent("category=video&q=gpt");
   });
 });
