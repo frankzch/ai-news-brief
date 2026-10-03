@@ -12,6 +12,7 @@ function safeHref(url: string | null): string | null {
 }
 
 export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
+  const published = article.published_at ? new Date(article.published_at) : null;
   const title = article.title_en || article.title || "Untitled";
   const href = safeHref(article.url);
   return (
@@ -36,8 +37,8 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
           {article.importance_score != null && (
             <span className="importance">Importance {article.importance_score}</span>
           )}
-          {article.published_at && (
-            <time dateTime={article.published_at}>{new Date(article.published_at).toLocaleString()}</time>
+          {published && !Number.isNaN(published.getTime()) && (
+            <time dateTime={published.toISOString()}>{published.toLocaleString()}</time>
           )}
         </p>
         {article.labels.length > 0 && (

@@ -57,4 +57,9 @@ describe("ArticleCard", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /English title/ })).toBeInTheDocument();
   });
+
+  it("omits the published time when it is not a valid date", () => {
+    render(<ArticleCard article={article({ published_at: "not-a-date" })} />);
+    expect(screen.queryByText(/invalid date/i)).not.toBeInTheDocument();
+  });
 });
