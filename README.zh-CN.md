@@ -143,6 +143,10 @@ python main.py         # 调度模式：每 schedule.interval_hours 小时执行
 
 模型、超时、互动门槛、各平台配额与数据保留策略均在 [config.yaml](config.yaml) 中配置。
 
+## 本地 Web 前端（开发）
+
+[web/](web/) 目录是 React + Vite 的阅读界面。配置好 `.env` 并有数据后，运行 `python tools/dev.py` 即可同时启动只读 API（`127.0.0.1:8000`）和前端（<http://localhost:5173>）。详细步骤见[英文 README](README.md#run-the-web-frontend-dev)。
+
 ## 用 AI Agent 直接查询 —— 无需自建
 
 不想自己跑这套流水线?同一份精选信息流还提供一个 **agent skill**,直连托管的 [inbrief.info](https://inbrief.info) API —— 把它装进 Claude Code / Codex / OpenClaw / Antigravity,用自然语言提问即可。无需密钥、无需抓取,开箱即用。
