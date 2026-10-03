@@ -28,7 +28,8 @@ export function ArticleDetail() {
   }, [id, attempt]);
 
   // Cards pass the list's query string along so Back restores the same filters.
-  const backTo = (location.state as { from?: string } | null)?.from ?? "/articles";
+  const from = (location.state as { from?: unknown } | null)?.from;
+  const backTo = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : "/articles";
   const back = (
     <p>
       <Link to={backTo}>← Back to articles</Link>

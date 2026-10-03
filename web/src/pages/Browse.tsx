@@ -14,7 +14,9 @@ import { messageOf, type Load } from "../lib/load";
 export function Browse() {
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(params), [params]);
-  const [list, setList] = useState<Load<ArticlesOut>>({ status: "loading" });
+  // Results are tagged with the filters that produced them so a render (or the page clamp below) never
+  // pairs one query's results with another's, e.g. after back/forward navigation.
+  const [result, setResult] = useState<({ filters: Filters } & Load<ArticlesOut>) | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [tags, setTags] = useState<TagOut[]>([]);
 
@@ -35,17 +37,18 @@ export function Browse() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setList({ status: "loading" });
+    setResult({ filters, status: "loading" });
     getArticles(filters, controller.signal)
       .then((data) => {
-        if (!controller.signal.aborted) setList({ status: "ready", data });
+        if (!controller.signal.aborted) setResult({ filters, status: "ready", data });
       })
       .catch((err: unknown) => {
-        if (!controller.signal.aborted) setList({ status: "error", message: messageOf(err) });
+        if (!controller.signal.aborted) setResult({ filters, status: "error", message: messageOf(err) });
       });
     return () => controller.abort();
   }, [filters, attempt]);
 
+  const list: Load<ArticlesOut> = result && result.filters === filters ? result : { status: "loading" };
   const total = list.status === "ready" ? list.data.total : 0;
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -54,7 +57,7 @@ export function Browse() {
     if (list.status === "ready" && total > 0 && filters.page > pages) {
       setParams(toSearchParams({ ...filters, page: pages }), { replace: true });
     }
-  }, [list, total, pages, filters, setParams]);
+  }, [list.status, total, pages, filters, setParams]);
 
   return (
     <section>

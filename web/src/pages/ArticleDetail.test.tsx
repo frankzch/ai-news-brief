@@ -31,9 +31,9 @@ function stub(handler: () => Promise<Response>) {
 }
 const json = (body: unknown, status = 200) => Promise.resolve(new Response(JSON.stringify(body), { status }));
 
-function renderAt(path = "/articles/a1") {
+function renderAt(path = "/articles/a1", state?: unknown) {
   return render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[{ pathname: path, state }]}>
       <Routes>
         <Route path="/articles/:id" element={<ArticleDetail />} />
         <Route path="/articles" element={<p>list page</p>} />
@@ -103,6 +103,20 @@ describe("ArticleDetail", () => {
   it("back link returns to the list", async () => {
     stub(() => json(ART));
     renderAt();
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute("href", "/articles");
+  });
+
+  it("back link restores the originating list query", async () => {
+    stub(() => json(ART));
+    renderAt("/articles/a1", { from: "/articles?category=news&page=2" });
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute("href", "/articles?category=news&page=2");
+  });
+
+  it("ignores a back target that is not an in-app path", async () => {
+    stub(() => json(ART));
+    renderAt("/articles/a1", { from: "//evil.example/x" });
     await screen.findByRole("heading", { level: 1 });
     expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute("href", "/articles");
   });

@@ -33,7 +33,6 @@ export function SearchBox({ value, onCommit }: Props) {
   useEffect(() => {
     const timer = setTimeout(() => commit(text), DEBOUNCE_MS);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
   return (

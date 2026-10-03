@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { Browse } from "./Browse";
 import type { ArticleOut, ArticlesOut } from "../api/types";
 
@@ -246,5 +246,33 @@ describe("Browse pagination", () => {
     renderBrowse("/articles?page=9");
     await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent("?page=3"));
     await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?limit=30&offset=60"));
+  });
+});
+
+describe("Browse stale results", () => {
+  it("does not clamp the page using the previous filters' total (history navigation)", async () => {
+    const fetchFn = stubApi({ articles: [art("a", "First")], total: 10 }, (p) =>
+      p.includes("offset=30") ? json({ articles: [art("z", "Deep page")], total: 65 }) : undefined,
+    );
+    function Jump() {
+      const navigate = useNavigate();
+      return (
+        <button type="button" onClick={() => navigate("/articles?page=2")}>
+          jump
+        </button>
+      );
+    }
+    render(
+      <MemoryRouter initialEntries={["/articles?category=news"]}>
+        <Browse />
+        <Jump />
+        <Where />
+      </MemoryRouter>,
+    );
+    await screen.findByText("First");
+    await userEvent.click(screen.getByRole("button", { name: "jump" }));
+    expect(await screen.findByText("Deep page")).toBeInTheDocument();
+    expect(screen.getByTestId("search")).toHaveTextContent("?page=2");
+    expect(articleCalls(fetchFn)).not.toContain("/api/articles?limit=30&offset=0");
   });
 });
