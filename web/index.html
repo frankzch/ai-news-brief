@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <script>
+      // Apply a saved theme before first paint to avoid a flash of the wrong one. Keep in sync with ThemeContext.
+      try {
+        var t = localStorage.getItem("inbrief.theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        var l = localStorage.getItem("inbrief.lang");
+        var zh = l ? l === "zh" : (navigator.language || "").toLowerCase().indexOf("zh") === 0;
+        document.documentElement.lang = zh ? "zh-CN" : "en";
+      } catch (e) {}
+    </script>
     <title>AI News Brief</title>
   </head>
   <body>
