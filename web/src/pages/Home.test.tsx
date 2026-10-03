@@ -116,4 +116,81 @@ describe("Home digest", () => {
     expect(screen.getByLabelText(/date/i)).toHaveValue("2026-10-03");
     expect(screen.getByTestId("search")).toHaveTextContent("?date=2026-10-03");
   });
+
+  it("shows an empty state for a date with no articles", async () => {
+    stubApi({
+      "/api/digest/2026-10-03": () =>
+        Promise.resolve(new Response(JSON.stringify({ date: "2026-10-03", articles: [] }))),
+    });
+    renderHome();
+    expect(await screen.findByText(/no articles for this date/i)).toBeInTheDocument();
+  });
+
+  it("treats a 404 digest as empty, not an error", async () => {
+    stubApi({
+      "/api/digest/2026-10-03": () =>
+        Promise.resolve(new Response(JSON.stringify({ detail: "No digest" }), { status: 404 })),
+    });
+    renderHome();
+    expect(await screen.findByText(/no articles for this date/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows a digest error with Retry that refetches", async () => {
+    let fail = true;
+    const fetchFn = stubApi({
+      "/api/digest/2026-10-03": () =>
+        fail
+          ? Promise.resolve(new Response(JSON.stringify({ detail: "boom" }), { status: 500 }))
+          : Promise.resolve(new Response(JSON.stringify(DIGESTS["2026-10-03"]))),
+    });
+    renderHome();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/boom/);
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+    expect(await screen.findByText("First story")).toBeInTheDocument();
+    expect(fetchFn.mock.calls.filter((c) => c[0] === "/api/digest/2026-10-03")).toHaveLength(2);
+  });
+
+  it("shows a dates error with Retry that refetches", async () => {
+    let fail = true;
+    stubApi({
+      "/api/dates": () =>
+        fail
+          ? Promise.resolve(new Response(JSON.stringify({ detail: "down" }), { status: 503 }))
+          : Promise.resolve(new Response(JSON.stringify(DATES))),
+    });
+    renderHome();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/down/);
+    fail = false;
+    await userEvent.click(screen.getByRole("button", { name: /retry/i }));
+    expect(await screen.findByText("First story")).toBeInTheDocument();
+  });
+
+  it("never lets a slow earlier response replace a newer selection", async () => {
+    let releaseSlow: () => void = () => {};
+    stubApi({
+      "/api/digest/2026-10-03": () =>
+        new Promise<Response>((resolve) => {
+          releaseSlow = () => resolve(new Response(JSON.stringify(DIGESTS["2026-10-03"])));
+        }),
+    });
+    renderHome();
+    const picker = await screen.findByLabelText(/date/i);
+    await userEvent.selectOptions(picker, "2026-10-02");
+    expect(await screen.findByText("Older story")).toBeInTheDocument();
+    releaseSlow();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByText("Older story")).toBeInTheDocument();
+    expect(screen.queryByText("First story")).not.toBeInTheDocument();
+  });
+
+  it("does not show the previous date's cards while the next date loads", async () => {
+    stubApi({ "/api/digest/2026-10-02": () => new Promise<Response>(() => {}) });
+    renderHome();
+    await screen.findByText("First story");
+    await userEvent.selectOptions(screen.getByLabelText(/date/i), "2026-10-02");
+    expect(screen.queryByText("First story")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/loading/i);
+  });
 });
