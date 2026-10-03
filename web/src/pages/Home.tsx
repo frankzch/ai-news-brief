@@ -4,29 +4,11 @@ import { ApiError, getDates, getDigest } from "../api/client";
 import type { DatesOut, DigestOut } from "../api/types";
 import { ArticleCard } from "../components/ArticleCard";
 import { DatePicker } from "../components/DatePicker";
-
-type Load<T> =
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "ready"; data: T };
+import { RetryError } from "../components/RetryError";
+import { messageOf, type Load } from "../lib/load";
 
 // Digest results are tagged with their date so a render never pairs one date's cards with another's picker value.
 type DigestLoad = { date: string } & Load<DigestOut>;
-
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : "Request failed";
-}
-
-function RetryError({ children, onRetry }: { children: string; onRetry: () => void }) {
-  return (
-    <div role="alert" className="notice notice-error">
-      <p>{children}</p>
-      <button type="button" className="button" onClick={onRetry}>
-        Retry
-      </button>
-    </div>
-  );
-}
 
 export function Home() {
   const [dates, setDates] = useState<Load<DatesOut>>({ status: "loading" });

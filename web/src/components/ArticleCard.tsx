@@ -1,15 +1,5 @@
 import type { ArchiveArticleOut } from "../api/types";
-
-// Article urls come from scraped feeds, so only plain http(s) links are made clickable.
-function safeHref(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    const { protocol } = new URL(url);
-    return protocol === "http:" || protocol === "https:" ? url : null;
-  } catch {
-    return null;
-  }
-}
+import { safeHref } from "../lib/url";
 
 export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
   const published = article.published_at ? new Date(article.published_at) : null;

@@ -142,3 +142,17 @@
     transition: none;
   }
 }
+
+.detail-body {
+  max-width: 65ch;
+  margin: var(--space-4) 0;
+  font-size: 1.0625rem;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
