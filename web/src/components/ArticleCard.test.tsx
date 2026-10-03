@@ -13,7 +13,7 @@ function render(ui: ReactElement) {
 function article(over: Partial<ArchiveArticleOut> = {}): ArchiveArticleOut {
   return {
     article_id: "a1",
-    rank: 1,
+    rank: 0,
     title: "Raw title",
     title_en: "English title",
     title_zh: null,
@@ -76,8 +76,13 @@ describe("ArticleCard", () => {
   });
 
   it("hides the rank outside a digest", () => {
-    render(<ArticleCard article={article({ rank: 0 })} />);
+    render(<ArticleCard article={article({ rank: -1 })} />);
     expect(screen.queryByLabelText(/rank/i)).not.toBeInTheDocument();
+  });
+
+  it("displays the API's 0-based rank as a 1-based position", () => {
+    render(<ArticleCard article={article({ rank: 2 })} />);
+    expect(screen.getByLabelText("Rank 3")).toHaveTextContent("3");
   });
 
   it("omits the published time when it is not a valid date", () => {
