@@ -6,11 +6,11 @@ import { categoryLabel } from "../i18n/strings";
 import { safeHref } from "../lib/url";
 import { InlineMarkdown } from "./Markdown";
 
-// List results use ArticleOut; the card renders the digest shape, so map once here (no rank outside a digest).
+// List results use ArticleOut; the card renders the digest shape, so map once here (rank -1 = not in a digest; digest ranks are 0-based).
 export function fromArticle(a: ArticleOut): ArchiveArticleOut {
   return {
     article_id: a.id,
-    rank: 0,
+    rank: -1,
     title: a.title,
     title_en: a.title_en,
     title_zh: a.title_zh,
@@ -37,9 +37,9 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
   const location = useLocation();
   return (
     <article className="card">
-      {article.rank > 0 && (
-        <span className="card-rank" aria-label={t.rank(article.rank)}>
-          {article.rank}
+      {article.rank >= 0 && (
+        <span className="card-rank" aria-label={t.rank(article.rank + 1)}>
+          {article.rank + 1}
         </span>
       )}
       <div className="card-body">

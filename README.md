@@ -165,6 +165,25 @@ Handlers get a read-only database wrapper that exposes only an allowlist of read
 | `GET /api/articles/{id}` | one article (404 if missing) |
 | `GET /api/tags` | `{tags: [{tag, count}]}` — hot tags over the last 30 days |
 
+## Run the web frontend (dev)
+
+A React + Vite reading UI for the digest lives in [web/](web/). It needs the read-only API above and a database that already has data (see [Quick start](#quick-start); run `python main.py --now` once if the digest is empty).
+
+Prerequisites: Python 3.10+ with `pip install -r requirements.txt`, Node.js 20.19+ (or 22.12+, required by Vite 8), and `.env` configured with your Postgres URL.
+
+```bash
+python tools/dev.py
+```
+
+This starts the API on `http://127.0.0.1:8000` and the frontend on **http://localhost:5173** (open this one), runs `npm install` on first use, and stops both on Ctrl-C. The Vite dev server proxies `/api` to the API.
+
+Prefer two terminals? Run `python -m api` in one and `cd web && npm install && npm run dev` in the other.
+
+Notes:
+- Ports 8000 and 5173 are fixed (the API's CORS only allows the Vite origin on 5173); the launcher exits with a message if either is taken.
+- To point the frontend at an API elsewhere, set `VITE_API_PROXY_TARGET` (e.g. `VITE_API_PROXY_TARGET=http://127.0.0.1:9000`) before starting Vite.
+- Frontend checks: `cd web && npm test` and `npm run typecheck`.
+
 ## Query it from your AI agent — no self-hosting
 
 Don't want to run the pipeline yourself? The same curated feed is available as an **agent skill** that talks to the hosted [inbrief.info](https://inbrief.info) API — drop it into Claude Code / Codex / OpenClaw / Antigravity and just ask in plain English. No keys, no scraping, works out of the box.
