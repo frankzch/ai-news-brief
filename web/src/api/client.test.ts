@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, getDates, getJson } from "./client";
+import { ApiError, getDates, getDigest, getJson } from "./client";
 
 function mockFetch(status: number, body: unknown) {
   const fn = vi.fn().mockResolvedValue(
@@ -36,5 +36,16 @@ describe("getDates", () => {
     const fetchFn = mockFetch(200, { dates: ["2026-10-03"], latest: "2026-10-03" });
     await expect(getDates()).resolves.toEqual({ dates: ["2026-10-03"], latest: "2026-10-03" });
     expect(fetchFn.mock.calls[0][0]).toBe("/api/dates");
+  });
+});
+
+describe("getDigest", () => {
+  it("fetches /api/digest/<date> with the date encoded", async () => {
+    const fetchFn = mockFetch(200, { date: "2026-10-03", articles: [] });
+    await expect(getDigest("2026-10-03")).resolves.toEqual({ date: "2026-10-03", articles: [] });
+    expect(fetchFn.mock.calls[0][0]).toBe("/api/digest/2026-10-03");
+    mockFetch(200, { date: "a/b", articles: [] });
+    await getDigest("a/b");
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/api/digest/a%2Fb");
   });
 });
