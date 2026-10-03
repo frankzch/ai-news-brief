@@ -1,0 +1,144 @@
+.cards {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.card {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.card-rank {
+  flex: none;
+  min-width: 1.75rem;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-muted-foreground);
+}
+
+.card-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.125rem;
+  overflow-wrap: anywhere;
+}
+
+.card-title a {
+  color: var(--color-foreground);
+}
+
+.card-title a:hover {
+  color: var(--color-accent);
+}
+
+.card-summary {
+  margin: 0 0 var(--space-3);
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-muted-foreground);
+}
+
+.badge,
+.chip {
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+.importance {
+  font-weight: 500;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.date-picker label {
+  font-weight: 500;
+}
+
+.date-picker select {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font: inherit;
+  color: var(--color-foreground);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.date-picker select:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.button {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+  .card {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .card-rank {
+    min-width: 1.25rem;
+    font-size: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}

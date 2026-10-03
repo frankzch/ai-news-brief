@@ -1,4 +1,4 @@
-import type { DatesOut } from "./types";
+import type { DatesOut, DigestOut } from "./types";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -31,4 +31,8 @@ export async function getJson<T>(path: string, signal?: AbortSignal): Promise<T>
 
 export function getDates(signal?: AbortSignal): Promise<DatesOut> {
   return getJson<DatesOut>("/api/dates", signal);
+}
+
+export function getDigest(date: string, signal?: AbortSignal): Promise<DigestOut> {
+  return getJson<DigestOut>(`/api/digest/${encodeURIComponent(date)}`, signal);
 }

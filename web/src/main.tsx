@@ -6,6 +6,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
+import "./styles/digest.css";
 import { App } from "./App";
 
 createRoot(document.getElementById("root")!).render(
