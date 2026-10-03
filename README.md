@@ -169,7 +169,7 @@ Handlers get a read-only database wrapper that exposes only an allowlist of read
 
 A React + Vite reading UI for the digest lives in [web/](web/). It needs the read-only API above and a database that already has data (see [Quick start](#quick-start); run `python main.py --now` once if the digest is empty).
 
-Prerequisites: Python 3.10+ with `pip install -r requirements.txt`, Node.js 20+, and `.env` configured with your Postgres URL.
+Prerequisites: Python 3.10+ with `pip install -r requirements.txt`, Node.js 20.19+ (or 22.12+, required by Vite 8), and `.env` configured with your Postgres URL.
 
 ```bash
 python tools/dev.py

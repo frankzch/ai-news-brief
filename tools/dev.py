@@ -40,7 +40,7 @@ def check_prereqs(which=shutil.which):
     problems = []
     for tool in ("node", "npm"):
         if which(tool) is None:
-            problems.append(f"{tool} not found on PATH (install Node.js 20+ from https://nodejs.org)")
+            problems.append(f"{tool} not found on PATH (install Node.js 20.19+ or 22.12+ from https://nodejs.org)")
     return problems
 
 
@@ -79,7 +79,8 @@ def _stop(proc):
         return
     try:
         if os.name == "nt":
-            proc.terminate()
+            # npm.cmd spawns vite as a child; /T takes the whole tree down.
+            subprocess.call(["taskkill", "/T", "/F", "/PID", str(proc.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         else:
             os.killpg(proc.pid, 15)
         proc.wait(timeout=5)
