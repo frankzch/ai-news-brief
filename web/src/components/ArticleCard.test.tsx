@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render as rtlRender, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { ReactElement } from "react";
 import { ArticleCard } from "./ArticleCard";
 import type { ArchiveArticleOut } from "../api/types";
+
+function render(ui: ReactElement) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 function article(over: Partial<ArchiveArticleOut> = {}): ArchiveArticleOut {
   return {
@@ -44,18 +50,33 @@ describe("ArticleCard", () => {
     expect(screen.queryByText("A short summary.")).not.toBeInTheDocument();
   });
 
-  it("links out safely for http(s) urls", () => {
+  it("links the title to the internal detail page", () => {
     render(<ArticleCard article={article()} />);
-    const link = screen.getByRole("link", { name: /English title/ });
+    expect(screen.getByRole("link", { name: /English title/ })).toHaveAttribute("href", "/articles/a1");
+  });
+
+  it("encodes the article id in the detail link", () => {
+    render(<ArticleCard article={article({ article_id: "a/b" })} />);
+    expect(screen.getByRole("link", { name: /English title/ })).toHaveAttribute("href", "/articles/a%2Fb");
+  });
+
+  it("links out safely to the original for http(s) urls", () => {
+    render(<ArticleCard article={article()} />);
+    const link = screen.getByRole("link", { name: /original/i });
     expect(link).toHaveAttribute("href", "https://example.com/post");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it("does not render a link for non-http urls", () => {
+  it("does not render an original link for non-http urls", () => {
     render(<ArticleCard article={article({ url: "javascript:alert(1)" })} />);
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /English title/ })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /original/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /English title/ })).toBeInTheDocument();
+  });
+
+  it("hides the rank outside a digest", () => {
+    render(<ArticleCard article={article({ rank: 0 })} />);
+    expect(screen.queryByLabelText(/rank/i)).not.toBeInTheDocument();
   });
 
   it("omits the published time when it is not a valid date", () => {
