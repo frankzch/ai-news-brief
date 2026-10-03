@@ -16,6 +16,7 @@ ALLOWED_METHODS = frozenset({
     "get_hot_tags",
     "get_all_articles_in_date_range",
     "get_articles_by_category_in_date_range",
+    "search_articles",
 })
 
 

@@ -939,7 +939,9 @@ class UserDatabase:
 
         with self._get_connection() as conn:
             cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(f'SELECT COUNT(*) FROM articles a {where}', params)
+            cursor.execute(
+                f'SELECT COUNT(*) FROM articles a JOIN rss_sources rs ON a.rss_source_id = rs.id {where}',
+                params)
             row = cursor.fetchone()
             total = row['count'] if isinstance(row, dict) else row[0]
             cursor.execute(f'''

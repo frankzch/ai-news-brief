@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import config
+from .routes import router
 
 logger = logging.getLogger("api")
 
@@ -24,6 +25,9 @@ async def unhandled(request: Request, exc: Exception):
     # Log the type only: messages can carry connection strings.
     logger.error("Unhandled error on %s: %s", request.url.path, type(exc).__name__)
     return JSONResponse({"detail": "Internal server error"}, status_code=500)
+
+
+app.include_router(router)
 
 
 @app.get("/api/health")

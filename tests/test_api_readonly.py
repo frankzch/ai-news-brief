@@ -39,7 +39,7 @@ def test_everything_else_is_rejected(name):
 def test_allowlist_contains_only_read_methods():
     assert ALLOWED_METHODS
     for name in ALLOWED_METHODS:
-        assert name.startswith("get_")
+        assert name.startswith(("get_", "search_"))
 
 
 def test_dependency_is_lazy(monkeypatch):
