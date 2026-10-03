@@ -4,6 +4,7 @@ import { ApiError, getArticle } from "../api/client";
 import type { ArticleOut } from "../api/types";
 import { localeOf, useLang } from "../i18n/LangContext";
 import { pick } from "../i18n/pick";
+import { categoryLabel } from "../i18n/strings";
 import { Markdown } from "../components/Markdown";
 import { RetryError } from "../components/RetryError";
 import { messageOf, type Load } from "../lib/load";
@@ -71,7 +72,7 @@ export function ArticleDetail() {
       <h1>{title}</h1>
       <p className="card-meta">
         {a.source_name && <span>{a.source_name}</span>}
-        {a.category && <span className="badge">{t.categories[a.category] ?? a.category}</span>}
+        {a.category && <span className="badge">{categoryLabel(t, a.category)}</span>}
         {a.importance_score != null && <span className="importance">{t.importance(a.importance_score)}</span>}
         {published && !Number.isNaN(published.getTime()) && (
           <time dateTime={published.toISOString()}>{published.toLocaleString(localeOf(lang))}</time>

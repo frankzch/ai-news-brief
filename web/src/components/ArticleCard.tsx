@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import type { ArchiveArticleOut, ArticleOut } from "../api/types";
 import { localeOf, useLang } from "../i18n/LangContext";
 import { pick } from "../i18n/pick";
+import { categoryLabel } from "../i18n/strings";
 import { safeHref } from "../lib/url";
 import { InlineMarkdown } from "./Markdown";
 
@@ -62,7 +63,7 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
               {t.original}
             </a>
           )}
-          {article.category && <span className="badge">{t.categories[article.category] ?? article.category}</span>}
+          {article.category && <span className="badge">{categoryLabel(t, article.category)}</span>}
           {article.importance_score != null && (
             <span className="importance">{t.importance(article.importance_score)}</span>
           )}

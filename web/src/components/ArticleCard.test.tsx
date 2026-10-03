@@ -128,3 +128,10 @@ describe("ArticleCard language", () => {
     expect(screen.getByText("podcast")).toBeInTheDocument();
   });
 });
+
+describe("ArticleCard category label", () => {
+  it("shows prototype-like category names verbatim instead of crashing", () => {
+    render(<ArticleCard article={article({ category: "constructor" })} />);
+    expect(screen.getByText("constructor")).toBeInTheDocument();
+  });
+});

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -6,6 +6,7 @@ import { LangProvider } from "./LangContext";
 import { Layout } from "../components/Layout";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   document.documentElement.lang = "";
 });
@@ -45,6 +46,16 @@ describe("LangProvider", () => {
 
   it("ignores an invalid saved value", () => {
     localStorage.setItem("inbrief.lang", "fr");
+    renderLayout();
+    expect(screen.getByRole("link", { name: "Browse" })).toBeInTheDocument();
+  });
+
+  it("defaults to Chinese for a Chinese browser, but a saved choice wins", () => {
+    vi.spyOn(navigator, "language", "get").mockReturnValue("zh-TW");
+    const first = renderLayout();
+    expect(screen.getByRole("link", { name: "浏览" })).toBeInTheDocument();
+    first.unmount();
+    localStorage.setItem("inbrief.lang", "en");
     renderLayout();
     expect(screen.getByRole("link", { name: "Browse" })).toBeInTheDocument();
   });

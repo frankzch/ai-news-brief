@@ -1,4 +1,5 @@
 import { useLang } from "../i18n/LangContext";
+import { categoryLabel } from "../i18n/strings";
 import { CATEGORIES, type Category } from "../lib/filters";
 
 interface Props {
@@ -21,7 +22,7 @@ export function CategoryTabs({ value, onChange }: Props) {
           aria-pressed={value === c}
           onClick={() => onChange(value === c ? null : c)}
         >
-          {t.categories[c] ?? c}
+          {categoryLabel(t, c)}
         </button>
       ))}
     </div>

@@ -126,3 +126,8 @@ const zh: Dict = {
 };
 
 export const STRINGS: Record<Lang, Dict> = { en, zh };
+
+// Category comes from the API as a free string; plain indexing would hit Object.prototype ("constructor", "toString").
+export function categoryLabel(t: Dict, category: string): string {
+  return Object.hasOwn(t.categories, category) ? t.categories[category] : category;
+}
