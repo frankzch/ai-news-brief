@@ -1,3 +1,5 @@
+import { useLang } from "../i18n/LangContext";
+
 interface Props {
   page: number;
   pages: number;
@@ -5,17 +7,18 @@ interface Props {
 }
 
 export function Pagination({ page, pages, onChange }: Props) {
+  const { t } = useLang();
   if (pages <= 1) return null;
   return (
-    <nav aria-label="Pagination" className="pagination">
+    <nav aria-label={t.pagination} className="pagination">
       <button type="button" className="button" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-        Previous
+        {t.previous}
       </button>
       <span>
-        Page {page} of {pages}
+        {t.pageOf(page, pages)}
       </span>
       <button type="button" className="button" disabled={page >= pages} onClick={() => onChange(page + 1)}>
-        Next
+        {t.next}
       </button>
     </nav>
   );

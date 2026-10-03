@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ArticleDetail } from "./ArticleDetail";
 import type { ArticleOut } from "../api/types";
+import { LangProvider } from "../i18n/LangContext";
 
 const ART: ArticleOut = {
   id: "a1",
@@ -22,7 +23,10 @@ const ART: ArticleOut = {
   published_at: "2026-10-03T08:00:00Z",
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  localStorage.clear();
+});
 
 function stub(handler: () => Promise<Response>) {
   const fn = vi.fn((_path: string) => handler());
@@ -129,5 +133,42 @@ describe("ArticleDetail markdown", () => {
     expect(await screen.findByRole("heading", { level: 2, name: "Why it matters" })).toBeInTheDocument();
     expect(document.querySelector("strong")).toHaveTextContent("big");
     expect(document.body.textContent).not.toContain("**");
+  });
+});
+
+describe("ArticleDetail language", () => {
+  function renderZh() {
+    localStorage.setItem("inbrief.lang", "zh");
+    return render(
+      <LangProvider>
+        <MemoryRouter initialEntries={["/articles/a1"]}>
+          <Routes>
+            <Route path="/articles/:id" element={<ArticleDetail />} />
+          </Routes>
+        </MemoryRouter>
+      </LangProvider>,
+    );
+  }
+
+  it("shows the Chinese title, long summary and chrome", async () => {
+    stub(() => json({ ...ART, title_zh: "中文标题", long_summary_zh: "较长的中文摘要。" }));
+    renderZh();
+    expect(await screen.findByRole("heading", { level: 1, name: "中文标题" })).toBeInTheDocument();
+    expect(screen.getByText("较长的中文摘要。")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "打开原文" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "← 返回文章列表" })).toBeInTheDocument();
+  });
+
+  it("falls back to the English long summary when Chinese is missing", async () => {
+    stub(() => json(ART));
+    renderZh();
+    expect(await screen.findByRole("heading", { level: 1, name: "English title" })).toBeInTheDocument();
+    expect(screen.getByText("A much longer summary.")).toBeInTheDocument();
+  });
+
+  it("uses the Chinese short summary when there is no long summary", async () => {
+    stub(() => json({ ...ART, long_summary_en: null, summary_zh: "中文短摘要。" }));
+    renderZh();
+    expect(await screen.findByText("中文短摘要。")).toBeInTheDocument();
   });
 });

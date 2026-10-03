@@ -1,4 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { LangProvider } from "./i18n/LangContext";
+import { ThemeProvider } from "./theme/ThemeContext";
 import { Layout } from "./components/Layout";
 import { ArticleDetail } from "./pages/ArticleDetail";
 import { Browse } from "./pages/Browse";
@@ -20,8 +22,12 @@ export function AppRoutes() {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <ThemeProvider>
+      <LangProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </LangProvider>
+    </ThemeProvider>
   );
 }

@@ -128,3 +128,111 @@ a:focus-visible {
     animation-duration: 0.01ms !important;
   }
 }
+
+.settings-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segment {
+  font: inherit;
+  font-size: 0.875rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  cursor: pointer;
+}
+
+.segment + .segment {
+  border-inline-start: 1px solid var(--color-border);
+}
+
+.segment[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: -2px;
+}
+
+/* CJK reads better with more leading and no synthetic italics/tight headings. */
+:root:lang(zh) body {
+  line-height: 1.75;
+}
+
+:lang(zh) h1,
+:lang(zh) h2,
+:lang(zh) h3 {
+  line-height: 1.4;
+}
+
+html {
+  overflow-wrap: break-word;
+}
+
+/* Phone width: roomy tap targets (>= 44px), header wraps, nothing forces horizontal scroll. */
+@media (max-width: 40rem) {
+  .site-header {
+    align-items: center;
+  }
+
+  .site-nav {
+    gap: var(--space-1);
+  }
+
+  .site-nav a,
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-inline: var(--space-2);
+  }
+
+  .settings-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .segment {
+    padding: 0 var(--space-2);
+  }
+
+  .tab,
+  .chip-button,
+  .chip-toggle,
+  .button,
+  .date-picker select,
+  .search-box input {
+    min-height: 2.75rem;
+  }
+
+  .tab,
+  .chip-button,
+  .chip-toggle {
+    padding-inline: var(--space-3);
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .date-picker select {
+    flex: 1;
+    min-width: 0;
+  }
+}

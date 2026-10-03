@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useLang } from "../i18n/LangContext";
 
 const DEBOUNCE_MS = 300;
 
@@ -10,6 +11,7 @@ interface Props {
 // Typing is local and commits to the URL once settled; URL changes (back/forward) flow back in.
 export function SearchBox({ value, onCommit }: Props) {
   const id = useId();
+  const { t } = useLang();
   const [text, setText] = useState(value);
   const committed = useRef(value);
   // The debounce timer outlives renders; always call the latest handler so it never applies stale filters.
@@ -44,7 +46,7 @@ export function SearchBox({ value, onCommit }: Props) {
         commit(text);
       }}
     >
-      <label htmlFor={id}>Search</label>
+      <label htmlFor={id}>{t.search}</label>
       <input id={id} type="search" value={text} maxLength={200} onChange={(e) => setText(e.target.value)} />
     </form>
   );

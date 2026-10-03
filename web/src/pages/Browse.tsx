@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getArticles, getTags } from "../api/client";
 import type { ArticlesOut, TagOut } from "../api/types";
+import { useLang } from "../i18n/LangContext";
 import { ArticleCard, fromArticle } from "../components/ArticleCard";
 import { CategoryTabs } from "../components/CategoryTabs";
 import { Pagination } from "../components/Pagination";
@@ -12,6 +13,7 @@ import { parseFilters, toSearchParams, withFilter, PAGE_SIZE, type Filters } fro
 import { messageOf, type Load } from "../lib/load";
 
 export function Browse() {
+  const { t } = useLang();
   const [params, setParams] = useSearchParams();
   const filters = useMemo(() => parseFilters(params), [params]);
   // Results are tagged with the filters that produced them so a render (or the page clamp below) never
@@ -61,17 +63,17 @@ export function Browse() {
 
   return (
     <section>
-      <h1>Browse articles</h1>
+      <h1>{t.browseArticles}</h1>
       <SearchBox value={filters.q} onCommit={(q) => update({ q })} />
       <CategoryTabs value={filters.category} onChange={(category) => update({ category })} />
       <TagChips tags={tags} active={filters.tag} onChange={(tag) => update({ tag })} />
-      {list.status === "loading" && <p role="status">Loading articles…</p>}
+      {list.status === "loading" && <p role="status">{t.loadingArticles}</p>}
       {list.status === "error" && (
-        <RetryError onRetry={() => setAttempt((n) => n + 1)}>{`Could not load articles: ${list.message}`}</RetryError>
+        <RetryError onRetry={() => setAttempt((n) => n + 1)}>{t.couldNotLoadArticles(list.message)}</RetryError>
       )}
       {list.status === "ready" &&
         (list.data.articles.length === 0 ? (
-          <p className="notice">No articles match these filters.</p>
+          <p className="notice">{t.noArticlesMatch}</p>
         ) : (
           <div className="cards">
             {list.data.articles.map((a) => (

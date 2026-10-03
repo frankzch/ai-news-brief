@@ -1,5 +1,7 @@
 .cards {
   display: grid;
+  /* minmax(0, 1fr): the default auto track grows to the longest unbreakable word and overflows phones. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }
 
@@ -43,6 +45,7 @@
 
 .card-summary {
   margin: 0 0 var(--space-3);
+  overflow-wrap: anywhere;
 }
 
 .card-meta {

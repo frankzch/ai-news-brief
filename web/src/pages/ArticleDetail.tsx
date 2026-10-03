@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError, getArticle } from "../api/client";
 import type { ArticleOut } from "../api/types";
+import { localeOf, useLang } from "../i18n/LangContext";
+import { pick } from "../i18n/pick";
+import { categoryLabel } from "../i18n/strings";
 import { Markdown } from "../components/Markdown";
 import { RetryError } from "../components/RetryError";
 import { messageOf, type Load } from "../lib/load";
@@ -10,6 +13,7 @@ import { safeHref } from "../lib/url";
 export function ArticleDetail() {
   const { id = "" } = useParams();
   const location = useLocation();
+  const { lang, t } = useLang();
   const [state, setState] = useState<Load<ArticleOut> | { status: "missing" }>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
 
@@ -33,16 +37,16 @@ export function ArticleDetail() {
   const backTo = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : "/articles";
   const back = (
     <p>
-      <Link to={backTo}>← Back to articles</Link>
+      <Link to={backTo}>{t.backToArticles}</Link>
     </p>
   );
 
-  if (state.status === "loading") return <p role="status">Loading article…</p>;
+  if (state.status === "loading") return <p role="status">{t.loadingArticle}</p>;
   if (state.status === "missing") {
     return (
       <section>
         {back}
-        <p className="notice">Article not found.</p>
+        <p className="notice">{t.articleNotFound}</p>
       </section>
     );
   }
@@ -50,7 +54,7 @@ export function ArticleDetail() {
     return (
       <section>
         {back}
-        <RetryError onRetry={() => setAttempt((n) => n + 1)}>{`Could not load article: ${state.message}`}</RetryError>
+        <RetryError onRetry={() => setAttempt((n) => n + 1)}>{t.couldNotLoadArticle(state.message)}</RetryError>
       </section>
     );
   }
@@ -58,17 +62,20 @@ export function ArticleDetail() {
   const a = state.data;
   const published = a.published_at ? new Date(a.published_at) : null;
   const href = safeHref(a.url);
-  const body = a.long_summary_en || a.summary_en;
+  const title = pick(lang, { en: a.title_en, zh: a.title_zh }, a.title);
+  const body =
+    pick(lang, { en: a.long_summary_en, zh: a.long_summary_zh }) ??
+    pick(lang, { en: a.summary_en, zh: a.summary_zh });
   return (
     <article className="detail">
       {back}
-      <h1>{a.title_en || a.title}</h1>
+      <h1>{title}</h1>
       <p className="card-meta">
         {a.source_name && <span>{a.source_name}</span>}
-        {a.category && <span className="badge">{a.category}</span>}
-        {a.importance_score != null && <span className="importance">Importance {a.importance_score}</span>}
+        {a.category && <span className="badge">{categoryLabel(t, a.category)}</span>}
+        {a.importance_score != null && <span className="importance">{t.importance(a.importance_score)}</span>}
         {published && !Number.isNaN(published.getTime()) && (
-          <time dateTime={published.toISOString()}>{published.toLocaleString()}</time>
+          <time dateTime={published.toISOString()}>{published.toLocaleString(localeOf(lang))}</time>
         )}
       </p>
       {body && (
@@ -77,7 +84,7 @@ export function ArticleDetail() {
         </div>
       )}
       {a.tags.length > 0 && (
-        <ul className="chips" aria-label="Tags">
+        <ul className="chips" aria-label={t.tags}>
           {a.tags.map((t) => (
             <li key={t} className="chip">
               {t}
@@ -88,7 +95,7 @@ export function ArticleDetail() {
       {href && (
         <p>
           <a className="button button-link" href={href} target="_blank" rel="noopener noreferrer">
-            Open original
+            {t.openOriginal}
           </a>
         </p>
       )}

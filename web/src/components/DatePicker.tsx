@@ -1,3 +1,4 @@
+import { useLang } from "../i18n/LangContext";
 import { useId } from "react";
 
 interface Props {
@@ -8,9 +9,10 @@ interface Props {
 
 export function DatePicker({ dates, value, onChange }: Props) {
   const id = useId();
+  const { t } = useLang();
   return (
     <div className="date-picker">
-      <label htmlFor={id}>Date</label>
+      <label htmlFor={id}>{t.date}</label>
       <select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
         {dates.map((d) => (
           <option key={d} value={d}>
