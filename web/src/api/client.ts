@@ -1,4 +1,5 @@
-import type { DatesOut, DigestOut } from "./types";
+import type { ArticleOut, ArticlesOut, DatesOut, DigestOut, TagsOut } from "./types";
+import { PAGE_SIZE, type Filters } from "../lib/filters";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -35,4 +36,22 @@ export function getDates(signal?: AbortSignal): Promise<DatesOut> {
 
 export function getDigest(date: string, signal?: AbortSignal): Promise<DigestOut> {
   return getJson<DigestOut>(`/api/digest/${encodeURIComponent(date)}`, signal);
+}
+
+export function getArticles(filters: Filters, signal?: AbortSignal): Promise<ArticlesOut> {
+  const sp = new URLSearchParams();
+  if (filters.category) sp.set("category", filters.category);
+  if (filters.tag) sp.set("tag", filters.tag);
+  if (filters.q) sp.set("q", filters.q);
+  sp.set("limit", String(PAGE_SIZE));
+  sp.set("offset", String((filters.page - 1) * PAGE_SIZE));
+  return getJson<ArticlesOut>(`/api/articles?${sp.toString()}`, signal);
+}
+
+export function getArticle(id: string, signal?: AbortSignal): Promise<ArticleOut> {
+  return getJson<ArticleOut>(`/api/articles/${encodeURIComponent(id)}`, signal);
+}
+
+export function getTags(signal?: AbortSignal): Promise<TagsOut> {
+  return getJson<TagsOut>("/api/tags", signal);
 }

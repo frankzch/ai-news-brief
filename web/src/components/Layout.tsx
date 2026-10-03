@@ -1,4 +1,4 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 
 export function Layout() {
   return (
@@ -7,6 +7,12 @@ export function Layout() {
         <Link to="/" className="brand">
           AI News Brief
         </Link>
+        <nav aria-label="Main" className="site-nav">
+          <NavLink to="/" end>
+            Digest
+          </NavLink>
+          <NavLink to="/articles">Browse</NavLink>
+        </nav>
       </header>
       <main className="site-main">
         <Outlet />

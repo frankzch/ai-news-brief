@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, getDates, getDigest, getJson } from "./client";
+import { ApiError, getArticle, getArticles, getDates, getDigest, getJson, getTags } from "./client";
 
 function mockFetch(status: number, body: unknown) {
   const fn = vi.fn().mockResolvedValue(
@@ -47,5 +47,31 @@ describe("getDigest", () => {
     mockFetch(200, { date: "a/b", articles: [] });
     await getDigest("a/b");
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe("/api/digest/a%2Fb");
+  });
+});
+
+describe("article endpoints", () => {
+  it("getArticles sends only set filters plus limit/offset", async () => {
+    const fetchFn = mockFetch(200, { articles: [], total: 0 });
+    await getArticles({ category: "news", tag: "a b", q: "x&y", page: 3 });
+    expect(fetchFn.mock.calls[0][0]).toBe("/api/articles?category=news&tag=a+b&q=x%26y&limit=30&offset=60");
+  });
+
+  it("getArticles omits unset filters", async () => {
+    const fetchFn = mockFetch(200, { articles: [], total: 0 });
+    await getArticles({ category: null, tag: null, q: "", page: 1 });
+    expect(fetchFn.mock.calls[0][0]).toBe("/api/articles?limit=30&offset=0");
+  });
+
+  it("getArticle encodes the id", async () => {
+    const fetchFn = mockFetch(200, {});
+    await getArticle("a/b?c");
+    expect(fetchFn.mock.calls[0][0]).toBe("/api/articles/a%2Fb%3Fc");
+  });
+
+  it("getTags hits /api/tags", async () => {
+    const fetchFn = mockFetch(200, { tags: [] });
+    await getTags();
+    expect(fetchFn.mock.calls[0][0]).toBe("/api/tags");
   });
 });

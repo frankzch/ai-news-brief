@@ -53,8 +53,23 @@ a:focus-visible {
 }
 
 .site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding-block: var(--space-4);
   border-bottom: 1px solid var(--color-border);
+}
+
+.site-nav {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.site-nav a[aria-current="page"] {
+  color: var(--color-foreground);
+  font-weight: 500;
 }
 
 .brand {
