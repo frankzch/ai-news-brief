@@ -8,11 +8,16 @@ from log_config import setup_logging
 setup_logging(log_name='scheduler')
 
 from pipeline_runner import run_pipeline, cleanup_old_articles
+from daily_archive import archive_today
 from config_loader import ConfigLoader
 def run_all_jobs():
     """Wrapper to run all scheduled jobs."""
     
     run_pipeline()
+    try:
+        archive_today()
+    except Exception:
+        logging.exception("Daily archive failed; continuing with cleanup")
     cleanup_old_articles()
 
 
