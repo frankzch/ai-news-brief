@@ -1,4 +1,7 @@
 llm:
+  backend: "claude_cli"     # "claude_cli" (Claude subscription via `claude -p`) or "openai" (any OpenAI-compatible API)
+  claude_cli_model: "haiku" # alias or full model id passed to `claude --model`
+  claude_cli_path: ""       # optional; defaults to `claude` on PATH
   base_url: "https://api.deepseek.com/v1" # Any OpenAI-compatible endpoint. Override via INBRIEF_LLM_BASE_URL
   api_key: ""  # Set via DEEPSEEK_API_KEY / INBRIEF_LLM_API_KEY
   model_name: "deepseek-v4-flash"
