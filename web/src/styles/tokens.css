@@ -1,0 +1,58 @@
+/* Theme tokens. Light by default; dark follows the system unless data-theme overrides it. */
+:root {
+  --color-background: #fafaf9;
+  --color-foreground: #1c1917;
+  --color-card: #ffffff;
+  --color-muted: #f0efed;
+  --color-muted-foreground: #57534e;
+  --color-border: #d6d3d1;
+  --color-accent: #1d4ed8;
+  --color-on-accent: #ffffff;
+  --color-danger: #b91c1c;
+  --color-ring: #1d4ed8;
+
+  --font-heading: "Newsreader", "Songti SC", "Noto Serif SC", "Source Han Serif SC", serif;
+  --font-body: "Roboto", system-ui, -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --radius: 0.5rem;
+  --content-width: 46rem;
+  --transition: 180ms ease-out;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background: #141413;
+    --color-foreground: #f5f5f4;
+    --color-card: #1c1b1a;
+    --color-muted: #262524;
+    --color-muted-foreground: #a8a29e;
+    --color-border: #3f3d3b;
+    --color-accent: #93b4ff;
+    --color-on-accent: #0b1220;
+    --color-danger: #fca5a5;
+    --color-ring: #93b4ff;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-background: #141413;
+  --color-foreground: #f5f5f4;
+  --color-card: #1c1b1a;
+  --color-muted: #262524;
+  --color-muted-foreground: #a8a29e;
+  --color-border: #3f3d3b;
+  --color-accent: #93b4ff;
+  --color-on-accent: #0b1220;
+  --color-danger: #fca5a5;
+  --color-ring: #93b4ff;
+  color-scheme: dark;
+}
