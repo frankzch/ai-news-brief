@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ApiError, getArticle } from "../api/client";
 import type { ArticleOut } from "../api/types";
+import { Markdown } from "../components/Markdown";
 import { RetryError } from "../components/RetryError";
 import { messageOf, type Load } from "../lib/load";
 import { safeHref } from "../lib/url";
@@ -70,7 +71,11 @@ export function ArticleDetail() {
           <time dateTime={published.toISOString()}>{published.toLocaleString()}</time>
         )}
       </p>
-      {body && <p className="detail-body">{body}</p>}
+      {body && (
+        <div className="detail-body">
+          <Markdown text={body} />
+        </div>
+      )}
       {a.tags.length > 0 && (
         <ul className="chips" aria-label="Tags">
           {a.tags.map((t) => (

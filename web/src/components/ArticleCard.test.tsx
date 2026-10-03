@@ -84,3 +84,11 @@ describe("ArticleCard", () => {
     expect(screen.queryByText(/invalid date/i)).not.toBeInTheDocument();
   });
 });
+
+describe("ArticleCard markdown", () => {
+  it("renders bold in the summary without raw markers", () => {
+    const { container } = render(<ArticleCard article={article({ summary_en: "A **key** point" })} />);
+    expect(container.querySelector(".card-summary strong")).toHaveTextContent("key");
+    expect(container.textContent).not.toContain("**");
+  });
+});

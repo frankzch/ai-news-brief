@@ -121,3 +121,13 @@ describe("ArticleDetail", () => {
     expect(screen.getByRole("link", { name: /back/i })).toHaveAttribute("href", "/articles");
   });
 });
+
+describe("ArticleDetail markdown", () => {
+  it("renders markdown in the summary instead of raw markers", async () => {
+    stub(() => json({ ...ART, long_summary_en: "## Why it matters\n\nThis is **big**." }));
+    renderAt();
+    expect(await screen.findByRole("heading", { level: 2, name: "Why it matters" })).toBeInTheDocument();
+    expect(document.querySelector("strong")).toHaveTextContent("big");
+    expect(document.body.textContent).not.toContain("**");
+  });
+});

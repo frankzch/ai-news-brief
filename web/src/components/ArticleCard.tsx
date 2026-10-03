@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import type { ArchiveArticleOut, ArticleOut } from "../api/types";
 import { safeHref } from "../lib/url";
+import { InlineMarkdown } from "./Markdown";
 
 // List results use ArticleOut; the card renders the digest shape, so map once here (no rank outside a digest).
 export function fromArticle(a: ArticleOut): ArchiveArticleOut {
@@ -45,7 +46,9 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
             {title}
           </Link>
         </h2>
-        {article.summary_en && <p className="card-summary">{article.summary_en}</p>}
+        {article.summary_en && <p className="card-summary">
+            <InlineMarkdown text={article.summary_en} />
+          </p>}
         <p className="card-meta">
           {article.source && <span>{article.source}</span>}
           {href && (
