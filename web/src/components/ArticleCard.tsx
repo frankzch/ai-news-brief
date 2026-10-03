@@ -1,5 +1,27 @@
-import type { ArchiveArticleOut } from "../api/types";
+import type { ArchiveArticleOut, ArticleOut } from "../api/types";
 import { safeHref } from "../lib/url";
+
+// List results use ArticleOut; the card renders the digest shape, so map once here (no rank outside a digest).
+export function fromArticle(a: ArticleOut): ArchiveArticleOut {
+  return {
+    article_id: a.id,
+    rank: 0,
+    title: a.title,
+    title_en: a.title_en,
+    title_zh: a.title_zh,
+    summary_en: a.summary_en,
+    summary_zh: a.summary_zh,
+    long_summary_en: a.long_summary_en,
+    long_summary_zh: a.long_summary_zh,
+    importance_score: a.importance_score,
+    relevance_score: null,
+    source: a.source_name,
+    category: a.category,
+    published_at: a.published_at,
+    url: a.url,
+    labels: a.tags,
+  };
+}
 
 export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
   const published = article.published_at ? new Date(article.published_at) : null;
@@ -7,9 +29,11 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
   const href = safeHref(article.url);
   return (
     <article className="card">
-      <span className="card-rank" aria-label={`Rank ${article.rank}`}>
-        {article.rank}
-      </span>
+      {article.rank > 0 && (
+        <span className="card-rank" aria-label={`Rank ${article.rank}`}>
+          {article.rank}
+        </span>
+      )}
       <div className="card-body">
         <h2 className="card-title">
           {href ? (
