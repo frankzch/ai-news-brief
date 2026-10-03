@@ -1,3 +1,4 @@
+import { useLang } from "../i18n/LangContext";
 import { CATEGORIES, type Category } from "../lib/filters";
 
 interface Props {
@@ -6,10 +7,11 @@ interface Props {
 }
 
 export function CategoryTabs({ value, onChange }: Props) {
+  const { t } = useLang();
   return (
-    <div role="group" aria-label="Category" className="tabs">
+    <div role="group" aria-label={t.category} className="tabs">
       <button type="button" className="tab" aria-pressed={value === null} onClick={() => onChange(null)}>
-        All
+        {t.categoryAll}
       </button>
       {CATEGORIES.map((c) => (
         <button
@@ -19,7 +21,7 @@ export function CategoryTabs({ value, onChange }: Props) {
           aria-pressed={value === c}
           onClick={() => onChange(value === c ? null : c)}
         >
-          {c}
+          {t.categories[c] ?? c}
         </button>
       ))}
     </div>

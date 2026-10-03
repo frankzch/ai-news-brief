@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ApiError, getDates, getDigest } from "../api/client";
 import type { DatesOut, DigestOut } from "../api/types";
+import { useLang } from "../i18n/LangContext";
 import { ArticleCard } from "../components/ArticleCard";
 import { DatePicker } from "../components/DatePicker";
 import { RetryError } from "../components/RetryError";
@@ -11,6 +12,7 @@ import { messageOf, type Load } from "../lib/load";
 type DigestLoad = { date: string } & Load<DigestOut>;
 
 export function Home() {
+  const { t } = useLang();
   const [dates, setDates] = useState<Load<DatesOut>>({ status: "loading" });
   const [digest, setDigest] = useState<DigestLoad | null>(null);
   const [datesAttempt, setDatesAttempt] = useState(0);
@@ -61,35 +63,35 @@ export function Home() {
   }, [selected, digestAttempt]);
 
   if (dates.status === "loading") {
-    return <p role="status">Loading digests…</p>;
+    return <p role="status">{t.loadingDigests}</p>;
   }
   if (dates.status === "error") {
     return (
       <RetryError onRetry={() => setDatesAttempt((n) => n + 1)}>
-        {`Could not load digests: ${dates.message}`}
+        {t.couldNotLoadDigests(dates.message)}
       </RetryError>
     );
   }
   if (dates.data.dates.length === 0) {
-    return <p className="notice">No digests yet. Run the pipeline to create one.</p>;
+    return <p className="notice">{t.noDigests}</p>;
   }
 
   const current = digest && digest.date === selected ? digest : null;
   return (
     <section>
-      <h1>Daily digest</h1>
+      <h1>{t.dailyDigest}</h1>
       {selected && (
         <DatePicker dates={dates.data.dates} value={selected} onChange={(date) => setParams({ date })} />
       )}
-      {(!current || current.status === "loading") && <p role="status">Loading digest…</p>}
+      {(!current || current.status === "loading") && <p role="status">{t.loadingDigest}</p>}
       {current?.status === "error" && (
         <RetryError onRetry={() => setDigestAttempt((n) => n + 1)}>
-          {`Could not load digest: ${current.message}`}
+          {t.couldNotLoadDigest(current.message)}
         </RetryError>
       )}
       {current?.status === "ready" &&
         (current.data.articles.length === 0 ? (
-          <p className="notice">No articles for this date.</p>
+          <p className="notice">{t.noArticlesForDate}</p>
         ) : (
           <div className="cards">
             {[...current.data.articles]
