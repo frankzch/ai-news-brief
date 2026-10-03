@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import type { ArchiveArticleOut, ArticleOut } from "../api/types";
+import { localeOf, useLang } from "../i18n/LangContext";
+import { pick } from "../i18n/pick";
 import { safeHref } from "../lib/url";
 import { InlineMarkdown } from "./Markdown";
 
@@ -27,13 +29,15 @@ export function fromArticle(a: ArticleOut): ArchiveArticleOut {
 
 export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
   const published = article.published_at ? new Date(article.published_at) : null;
-  const title = article.title_en || article.title || "Untitled";
+  const { lang, t } = useLang();
+  const title = pick(lang, { en: article.title_en, zh: article.title_zh }, article.title) ?? t.untitled;
+  const summary = pick(lang, { en: article.summary_en, zh: article.summary_zh });
   const href = safeHref(article.url);
   const location = useLocation();
   return (
     <article className="card">
       {article.rank > 0 && (
-        <span className="card-rank" aria-label={`Rank ${article.rank}`}>
+        <span className="card-rank" aria-label={t.rank(article.rank)}>
           {article.rank}
         </span>
       )}
@@ -46,26 +50,28 @@ export function ArticleCard({ article }: { article: ArchiveArticleOut }) {
             {title}
           </Link>
         </h2>
-        {article.summary_en && <p className="card-summary">
-            <InlineMarkdown text={article.summary_en} />
-          </p>}
+        {summary && (
+          <p className="card-summary">
+            <InlineMarkdown text={summary} />
+          </p>
+        )}
         <p className="card-meta">
           {article.source && <span>{article.source}</span>}
           {href && (
             <a href={href} target="_blank" rel="noopener noreferrer">
-              Original
+              {t.original}
             </a>
           )}
-          {article.category && <span className="badge">{article.category}</span>}
+          {article.category && <span className="badge">{t.categories[article.category] ?? article.category}</span>}
           {article.importance_score != null && (
-            <span className="importance">Importance {article.importance_score}</span>
+            <span className="importance">{t.importance(article.importance_score)}</span>
           )}
           {published && !Number.isNaN(published.getTime()) && (
-            <time dateTime={published.toISOString()}>{published.toLocaleString()}</time>
+            <time dateTime={published.toISOString()}>{published.toLocaleString(localeOf(lang))}</time>
           )}
         </p>
         {article.labels.length > 0 && (
-          <ul className="chips" aria-label="Tags">
+          <ul className="chips" aria-label={t.tags}>
             {article.labels.map((label) => (
               <li key={label} className="chip">
                 {label}

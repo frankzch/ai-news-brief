@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { render as rtlRender, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactElement } from "react";
 import { ArticleCard } from "./ArticleCard";
+import { LangProvider } from "../i18n/LangContext";
 import type { ArchiveArticleOut } from "../api/types";
 
 function render(ui: ReactElement) {
@@ -90,5 +91,40 @@ describe("ArticleCard markdown", () => {
     const { container } = render(<ArticleCard article={article({ summary_en: "A **key** point" })} />);
     expect(container.querySelector(".card-summary strong")).toHaveTextContent("key");
     expect(container.textContent).not.toContain("**");
+  });
+});
+
+describe("ArticleCard language", () => {
+  afterEach(() => localStorage.clear());
+
+  function renderZh(a: ArchiveArticleOut) {
+    localStorage.setItem("inbrief.lang", "zh");
+    return rtlRender(
+      <LangProvider>
+        <MemoryRouter>
+          <ArticleCard article={a} />
+        </MemoryRouter>
+      </LangProvider>,
+    );
+  }
+
+  it("shows Chinese title, summary and chrome when selected", () => {
+    renderZh(article({ title_zh: "中文标题", summary_zh: "中文摘要。" }));
+    expect(screen.getByRole("heading", { name: "中文标题" })).toBeInTheDocument();
+    expect(screen.getByText("中文摘要。")).toBeInTheDocument();
+    expect(screen.getByText("新闻")).toBeInTheDocument();
+    expect(screen.getByText("重要度 8")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "原文" })).toBeInTheDocument();
+  });
+
+  it("falls back to English fields when the Chinese ones are missing", () => {
+    renderZh(article());
+    expect(screen.getByRole("heading", { name: "English title" })).toBeInTheDocument();
+    expect(screen.getByText("A short summary.")).toBeInTheDocument();
+  });
+
+  it("keeps an unknown category readable", () => {
+    renderZh(article({ category: "podcast" }));
+    expect(screen.getByText("podcast")).toBeInTheDocument();
   });
 });
