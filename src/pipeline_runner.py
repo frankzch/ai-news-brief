@@ -844,7 +844,7 @@ def run_pipeline():
     twitter_sources = []
     for s in all_sources:
         url = s.get('url', '')
-        desc_original = s.get('description', '').strip()
+        desc_original = (s.get('description') or '').strip()
         desc = desc_original.lower()
         # Reddit 关键词搜索源：保留原始 URL，由 RSS pipeline 内部识别后走搜索页直抓
         if 'reddit.com' in url and desc.startswith('keyword '):
