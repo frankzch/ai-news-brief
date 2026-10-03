@@ -29,8 +29,8 @@ class ArchiveArticleOut(BaseModel):
     summary_zh: Optional[str] = None
     long_summary_en: Optional[str] = None
     long_summary_zh: Optional[str] = None
-    importance_score: int = 0
-    relevance_score: float = 0
+    importance_score: Optional[int] = 0
+    relevance_score: Optional[float] = 0
     source: Optional[str] = None
     category: Optional[str] = None
     published_at: Optional[str] = None
@@ -52,7 +52,7 @@ class ArticleOut(BaseModel):
     summary_zh: Optional[str] = None
     long_summary_en: Optional[str] = None
     long_summary_zh: Optional[str] = None
-    importance_score: int = 0
+    importance_score: Optional[int] = 0
     tags: List[str] = Field(default_factory=list)
     category: Optional[str] = None
     url: str

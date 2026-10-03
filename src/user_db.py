@@ -927,9 +927,10 @@ class UserDatabase:
             clauses.append('a.category = %s')
             params.append(category)
         if tag:
-            # tags is JSON text, e.g. ["gpt","llm"]; match one whole element.
+            # tags is JSON text written with json.dumps (non-ASCII is escaped as \u XXXX),
+            # so match the same encoding of one whole element.
             clauses.append('a.tags ILIKE %s')
-            params.append('%"' + like(tag) + '"%')
+            params.append('%' + like(json.dumps(tag)) + '%')
         if q:
             pattern = '%' + like(q) + '%'
             fields = ('a.title', 'a.title_en', 'a.title_zh', 'a.summary_en', 'a.summary_zh')

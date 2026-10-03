@@ -73,3 +73,10 @@ def test_no_filters_has_no_where_clause():
     log = []
     make_db(log).search_articles()
     assert "WHERE" not in log[-1][0]
+
+
+def test_non_ascii_tag_matches_stored_json_escape():
+    log = []
+    make_db(log).search_articles(tag="人工")
+    # Stored via json.dumps => "\u4eba\u5de5"; the backslashes are LIKE-escaped.
+    assert '%"\\\\u4eba\\\\u5de5"%' in log[-1][1]
