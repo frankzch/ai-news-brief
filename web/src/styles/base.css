@@ -168,3 +168,71 @@ a:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: -2px;
 }
+
+/* CJK reads better with more leading and no synthetic italics/tight headings. */
+:root:lang(zh) body {
+  line-height: 1.75;
+}
+
+:lang(zh) h1,
+:lang(zh) h2,
+:lang(zh) h3 {
+  line-height: 1.4;
+}
+
+html {
+  overflow-wrap: break-word;
+}
+
+/* Phone width: roomy tap targets (>= 44px), header wraps, nothing forces horizontal scroll. */
+@media (max-width: 40rem) {
+  .site-header {
+    align-items: center;
+  }
+
+  .site-nav {
+    gap: var(--space-1);
+  }
+
+  .site-nav a,
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-inline: var(--space-2);
+  }
+
+  .settings-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .segment {
+    padding: 0 var(--space-2);
+  }
+
+  .tab,
+  .chip-button,
+  .chip-toggle,
+  .button,
+  .date-picker select,
+  .search-box input {
+    min-height: 2.75rem;
+  }
+
+  .tab,
+  .chip-button,
+  .chip-toggle {
+    padding-inline: var(--space-3);
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .date-picker select {
+    flex: 1;
+    min-width: 0;
+  }
+}
