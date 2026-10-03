@@ -1,16 +1,67 @@
 import os
-from openai import OpenAI
 import json
 import logging
+import shutil
+import subprocess
+import tempfile
+
+KEYCHAIN_SERVICE = "inbrief-claude-oauth"
+
+
+def _read_oauth_token():
+    """Claude Code OAuth token: env var first, then macOS Keychain (never a dotfile)."""
+    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+    if token:
+        return token.strip()
+    try:
+        out = subprocess.run(
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return out.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
+
+def _extract_json(text):
+    """Parse a JSON object from model output, tolerating code fences or stray prose."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text
+        text = text.rsplit("```", 1)[0]
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start, end = text.find("{"), text.rfind("}")
+        if start == -1 or end <= start:
+            raise
+        return json.loads(text[start:end + 1])
+
 
 class AIEngine:
     
     def __init__(self, config):
-        self.client = OpenAI(
-            api_key=os.environ.get("DEEPSEEK_API_KEY") or config['api_key'],
-            base_url=config['base_url']
-        )
+        self.backend = config.get('backend', 'openai')
         self.model = config['model_name']
+        if self.backend == 'claude_cli':
+            self.claude_bin = config.get('claude_cli_path') or shutil.which('claude')
+            if not self.claude_bin:
+                raise RuntimeError("llm.backend=claude_cli but the `claude` CLI was not found "
+                                   "(set llm.claude_cli_path or add it to PATH)")
+            self.model = config.get('claude_cli_model', 'haiku')
+            self.oauth_token = _read_oauth_token()
+            if not self.oauth_token:
+                raise RuntimeError(f"No Claude token: run `claude setup-token`, then store it with "
+                                   f"`security add-generic-password -s {KEYCHAIN_SERVICE} -a \"$USER\" -w`")
+            self.client = None
+        else:
+            from openai import OpenAI
+            self.client = OpenAI(
+                api_key=os.environ.get("DEEPSEEK_API_KEY") or config['api_key'],
+                base_url=config['base_url']
+            )
         # Load AI timeout from fetching config
         from config_loader import ConfigLoader
         fetching_config = ConfigLoader.get_instance().get('fetching', {})
@@ -20,6 +71,39 @@ class AIEngine:
         self.prompts_dir = os.path.join(os.path.dirname(__file__), 'prompts')
         # 预加载通用提示词
         self._prompt_cache = {}
+
+    def _complete_json(self, system_prompt, user_content, temperature, timeout=None):
+        """Run one JSON-returning completion on the configured backend and return the parsed dict."""
+        timeout = timeout if timeout else self.ai_timeout
+        if self.backend == 'claude_cli':
+            return _extract_json(self._claude_cli(system_prompt, user_content, timeout))
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": user_content})
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=temperature,
+            response_format={"type": "json_object"},
+            timeout=timeout,
+        )
+        return json.loads(response.choices[0].message.content.strip())
+
+    def _claude_cli(self, system_prompt, user_content, timeout):
+        """One-shot `claude -p` call: no tools, no session, subscription auth via OAuth token."""
+        cmd = [self.claude_bin, "-p", "--model", self.model, "--tools", "",
+               "--no-session-persistence", "--output-format", "text"]
+        if system_prompt:
+            cmd += ["--system-prompt", system_prompt]
+        env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.oauth_token}
+        env.pop("ANTHROPIC_API_KEY", None)  # make sure the subscription token is what gets used
+        with tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
+            proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only.",
+                                  capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
+        if proc.returncode != 0:
+            raise RuntimeError(f"claude CLI exited {proc.returncode}: {proc.stderr.strip()[:300]}")
+        return proc.stdout
 
     def _get_prompt_for_category(self, category: str) -> str:
         """
@@ -98,17 +182,7 @@ Reminder: You MUST output valid JSON in the exact format specified in your instr
         last_data = None
         for attempt in range(2):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_content}
-                    ],
-                    temperature=0.3,
-                    response_format={"type": "json_object"},
-                    timeout=timeout if timeout else self.ai_timeout
-                )
-                data = json.loads(response.choices[0].message.content.strip())
+                data = self._complete_json(system_prompt, user_content, 0.3, timeout)
             except Exception as e:
                 logging.error(f"AI Summarization failed (attempt {attempt + 1}/2): {e}")
                 continue
@@ -157,14 +231,7 @@ Reminder: You MUST output valid JSON in the exact format specified in your instr
         )
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
-            content = response.choices[0].message.content.strip()
-            data = json.loads(content)
+            data = self._complete_json(None, prompt, 0.3)
             
             # Ensure lists are valid
             categories = data.get('categories', [])
@@ -206,14 +273,7 @@ Reminder: You MUST output valid JSON in the exact format specified in your instr
         )
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.4,
-                response_format={"type": "json_object"}
-            )
-            content = response.choices[0].message.content.strip()
-            data = json.loads(content)
+            data = self._complete_json(None, prompt, 0.4)
             
             sources = data.get('rss_sources', [])
             

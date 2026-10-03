@@ -30,3 +30,7 @@ DrissionPage>=4.0.0
 
 # Aliyun Content Security (Green) - optional text moderation before article ingest
 alibabacloud_green20220302>=2.0.0
+
+# Read-only API for the web frontend (api/)
+fastapi>=0.110.0
+uvicorn>=0.27.0

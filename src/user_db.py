@@ -913,6 +913,55 @@ class UserDatabase:
             
             return articles
 
+    def search_articles(self, category: str = None, tag: str = None, q: str = None,
+                        limit: int = 30, offset: int = 0):
+        """Filter articles by category, tag and text. Returns (articles, total).
+
+        All user input is bound as parameters; LIKE wildcards are escaped.
+        """
+        def like(s: str) -> str:
+            return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+
+        clauses, params = [], []
+        if category:
+            clauses.append('a.category = %s')
+            params.append(category)
+        if tag:
+            # tags is JSON text written with json.dumps (non-ASCII is escaped as \u XXXX),
+            # so match the same encoding of one whole element.
+            clauses.append('a.tags ILIKE %s')
+            params.append('%' + like(json.dumps(tag)) + '%')
+        if q:
+            pattern = '%' + like(q) + '%'
+            fields = ('a.title', 'a.title_en', 'a.title_zh', 'a.summary_en', 'a.summary_zh')
+            clauses.append('(' + ' OR '.join(f'{f} ILIKE %s' for f in fields) + ')')
+            params.extend([pattern] * len(fields))
+        where = ('WHERE ' + ' AND '.join(clauses)) if clauses else ''
+
+        with self._get_connection() as conn:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cursor.execute(
+                f'SELECT COUNT(*) FROM articles a JOIN rss_sources rs ON a.rss_source_id = rs.id {where}',
+                params)
+            row = cursor.fetchone()
+            total = row['count'] if isinstance(row, dict) else row[0]
+            cursor.execute(f'''
+                SELECT a.*, rs.name as source_name FROM articles a
+                JOIN rss_sources rs ON a.rss_source_id = rs.id
+                {where}
+                ORDER BY a.importance_score DESC, a.published_at DESC
+                LIMIT %s OFFSET %s
+            ''', params + [limit, offset])
+            articles = []
+            for r in cursor.fetchall():
+                article = dict(r)
+                try:
+                    article['tags'] = json.loads(article['tags']) if article.get('tags') else []
+                except json.JSONDecodeError:
+                    article['tags'] = []
+                articles.append(article)
+            return articles, total
+
     def get_articles_count(self) -> int:
         """Get total article count."""
         with self._get_connection() as conn:

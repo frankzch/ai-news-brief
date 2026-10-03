@@ -1,4 +1,7 @@
 llm:
+  backend: "claude_cli"     # "claude_cli" (Claude subscription via `claude -p`) or "openai" (any OpenAI-compatible API)
+  claude_cli_model: "haiku" # alias or full model id passed to `claude --model`
+  claude_cli_path: ""       # optional; defaults to `claude` on PATH
   base_url: "https://api.deepseek.com/v1" # Any OpenAI-compatible endpoint. Override via INBRIEF_LLM_BASE_URL
   api_key: ""  # Set via DEEPSEEK_API_KEY / INBRIEF_LLM_API_KEY
   model_name: "deepseek-v4-flash"
@@ -17,7 +20,7 @@ supabase:
 
 fetching:
   network_timeout: 90      # 所有网络请求超时：RSS、文章抓取 (秒)
-  ai_timeout: 90           # LLM API 超时 (秒)
+  ai_timeout: 180          # LLM API 超时 (秒)
   max_input_chars: 80000   # 送入 LLM 的最大字符数
   concurrency: 5           # 文章处理并发数
   max_entries: 50          # 单次最多处理文章数

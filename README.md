@@ -147,6 +147,24 @@ python main.py         # scheduler mode: runs every schedule.interval_hours
 
 Models, timeouts, engagement thresholds, per-platform quotas and retention are all in [config.yaml](config.yaml).
 
+## Local read-only API (for the web frontend)
+
+```bash
+pip install -r requirements.txt
+python -m api          # serves http://127.0.0.1:8000, health check at /api/health
+```
+
+Binds to loopback only and allows CORS from the Vite dev server (`localhost:5173`); override with `API_CORS_ORIGINS` (comma-separated, no `*`).
+Handlers get a read-only database wrapper that exposes only an allowlist of read methods.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/dates` | `{dates, latest}` — archive dates, newest first |
+| `GET /api/digest/{date}` | `{date, articles}` — ranked digest for `YYYY-MM-DD` (404 if none) |
+| `GET /api/articles?category=&tag=&q=&limit=&offset=` | `{articles, total}` — category is news/discussion/video/opensource; limit 1–100 (default 30) |
+| `GET /api/articles/{id}` | one article (404 if missing) |
+| `GET /api/tags` | `{tags: [{tag, count}]}` — hot tags over the last 30 days |
+
 ## Query it from your AI agent — no self-hosting
 
 Don't want to run the pipeline yourself? The same curated feed is available as an **agent skill** that talks to the hosted [inbrief.info](https://inbrief.info) API — drop it into Claude Code / Codex / OpenClaw / Antigravity and just ask in plain English. No keys, no scraping, works out of the box.
