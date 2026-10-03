@@ -1,23 +1,27 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { useLang } from "../i18n/LangContext";
+import { SettingsBar } from "./SettingsBar";
 
 export function Layout() {
+  const { t } = useLang();
   return (
     <div className="layout">
       <header className="site-header">
         <Link to="/" className="brand">
-          AI News Brief
+          {t.brand}
         </Link>
-        <nav aria-label="Main" className="site-nav">
+        <nav aria-label={t.navMain} className="site-nav">
           <NavLink to="/" end>
-            Digest
+            {t.navDigest}
           </NavLink>
-          <NavLink to="/articles">Browse</NavLink>
+          <NavLink to="/articles">{t.navBrowse}</NavLink>
         </nav>
+        <SettingsBar />
       </header>
       <main className="site-main">
         <Outlet />
       </main>
-      <footer className="site-footer">Local read-only view of your daily digest</footer>
+      <footer className="site-footer">{t.footer}</footer>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { LangProvider } from "./i18n/LangContext";
 import { Layout } from "./components/Layout";
 import { ArticleDetail } from "./pages/ArticleDetail";
 import { Browse } from "./pages/Browse";
@@ -20,8 +21,10 @@ export function AppRoutes() {
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <LangProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </LangProvider>
   );
 }
