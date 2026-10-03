@@ -196,3 +196,55 @@ describe("Browse filters", () => {
     expect(screen.getByTestId("search")).toHaveTextContent("category=video&q=gpt");
   });
 });
+
+describe("Browse pagination", () => {
+  const PAGED = { articles: [art("a", "First")], total: 65 };
+
+  it("shows no pager for a single page", async () => {
+    stubApi({ articles: [art("a", "First")], total: 30 });
+    renderBrowse();
+    await screen.findByText("First");
+    expect(screen.queryByRole("navigation", { name: /pagination/i })).not.toBeInTheDocument();
+  });
+
+  it("pages with Next/Prev, keeping page in the URL", async () => {
+    const fetchFn = stubApi(PAGED);
+    renderBrowse();
+    await screen.findByText("First");
+    const nav = screen.getByRole("navigation", { name: /pagination/i });
+    expect(nav).toHaveTextContent("Page 1 of 3");
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: /next/i }));
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?limit=30&offset=30"));
+    expect(screen.getByTestId("search")).toHaveTextContent("?page=2");
+    expect(screen.getByRole("navigation", { name: /pagination/i })).toHaveTextContent("Page 2 of 3");
+    await userEvent.click(screen.getByRole("button", { name: /previous/i }));
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent(/^$/));
+  });
+
+  it("disables Next on the last page", async () => {
+    stubApi(PAGED);
+    renderBrowse("/articles?page=3");
+    await screen.findByText("First");
+    expect(screen.getByRole("button", { name: /next/i })).toBeDisabled();
+  });
+
+  it("resets to page 1 when a filter changes", async () => {
+    const fetchFn = stubApi(PAGED);
+    renderBrowse("/articles?page=2");
+    await screen.findByText("First");
+    await userEvent.click(screen.getByRole("button", { name: "news" }));
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?category=news&limit=30&offset=0"));
+    expect(screen.getByTestId("search")).toHaveTextContent("?category=news");
+    expect(screen.getByTestId("search")).not.toHaveTextContent("page");
+  });
+
+  it("clamps a page past the end to the last page", async () => {
+    const fetchFn = stubApi(PAGED, (p) =>
+      p.includes("offset=240") ? json({ articles: [], total: 65 }) : undefined,
+    );
+    renderBrowse("/articles?page=9");
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent("?page=3"));
+    await waitFor(() => expect(articleCalls(fetchFn)).toContain("/api/articles?limit=30&offset=60"));
+  });
+});

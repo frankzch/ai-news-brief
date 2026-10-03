@@ -231,3 +231,16 @@
 .chip-count {
   opacity: 0.7;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

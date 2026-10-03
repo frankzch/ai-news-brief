@@ -4,10 +4,11 @@ import { getArticles, getTags } from "../api/client";
 import type { ArticlesOut, TagOut } from "../api/types";
 import { ArticleCard, fromArticle } from "../components/ArticleCard";
 import { CategoryTabs } from "../components/CategoryTabs";
+import { Pagination } from "../components/Pagination";
 import { RetryError } from "../components/RetryError";
 import { SearchBox } from "../components/SearchBox";
 import { TagChips } from "../components/TagChips";
-import { parseFilters, toSearchParams, withFilter, type Filters } from "../lib/filters";
+import { parseFilters, toSearchParams, withFilter, PAGE_SIZE, type Filters } from "../lib/filters";
 import { messageOf, type Load } from "../lib/load";
 
 export function Browse() {
@@ -45,6 +46,16 @@ export function Browse() {
     return () => controller.abort();
   }, [filters, attempt]);
 
+  const total = list.status === "ready" ? list.data.total : 0;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // A shared URL can point past the end (data shrank); land on the last page instead of an empty one.
+  useEffect(() => {
+    if (list.status === "ready" && total > 0 && filters.page > pages) {
+      setParams(toSearchParams({ ...filters, page: pages }), { replace: true });
+    }
+  }, [list, total, pages, filters, setParams]);
+
   return (
     <section>
       <h1>Browse articles</h1>
@@ -65,6 +76,9 @@ export function Browse() {
             ))}
           </div>
         ))}
+      {list.status === "ready" && (
+        <Pagination page={filters.page} pages={pages} onChange={(page) => update({ page })} />
+      )}
     </section>
   );
 }
