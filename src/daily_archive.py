@@ -53,3 +53,13 @@ def build_daily_archive(user_db, date_str, limit=DEFAULT_ARCHIVE_LIMIT):
     user_db.delete_daily_archive(date_str)
     user_db.save_daily_archive(date_str, rows)
     return len(rows)
+
+
+def archive_today():
+    """Build the archive for the current UTC date using the configured database."""
+    from user_db import UserDatabase
+
+    date_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    count = build_daily_archive(UserDatabase(), date_str)
+    logging.info(f"Daily archive for {date_str}: {count} articles")
+    return count
