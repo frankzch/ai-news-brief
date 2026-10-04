@@ -18,6 +18,27 @@ from rss_fetcher import RSSFetcher
 from browser_utils import _expand_nested_replies
 
 
+def _hn_stats_from_api(comments_url: str):
+    """Points and comment count from HN's official Firebase API: (points, comments) or None.
+
+    The HTML item page rate-limits fast crawlers (HTTP 419 "Sorry"), so the API is the primary source.
+    """
+    import requests
+    m = re.search(r'[?&]id=(\d+)', comments_url or '')
+    if not m:
+        return None
+    try:
+        resp = requests.get(f'https://hacker-news.firebaseio.com/v0/item/{m.group(1)}.json', timeout=10)
+        resp.raise_for_status()
+        item = resp.json()
+        if not item or 'score' not in item:
+            return None
+        return int(item.get('score', 0)), int(item.get('descendants', 0))
+    except Exception as e:
+        logging.warning(f"HN API stats lookup failed for {comments_url}: {e}")
+        return None
+
+
 def _fetch_hackernews_content(topic_url: str, comments_url: str, page=None, log_prefix: str = '') -> tuple:
     """
     Fetch and process Hacker News content from both topic and comments pages.
@@ -61,64 +82,72 @@ def _fetch_hackernews_content(topic_url: str, comments_url: str, page=None, log_
     
     # Extract points and comments count from comments page HTML
     discussion_importance_score = 0
-    try:
-        response = requests.get(comments_url, timeout=10, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
+    points = 0
+    comments_count = 0
+    api_stats = _hn_stats_from_api(comments_url)
+    if api_stats is not None:
+        points, comments_count = api_stats
+        discussion_importance_score = min(100, (points + comments_count) // 10)
+        logging.info(f"{log_prefix} -> HN Stats (API): {points} points, {comments_count} comments, discussion_score: {discussion_importance_score}")
+    else:
+        try:
+            response = requests.get(comments_url, timeout=10, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
         
-        points = 0
-        comments_count = 0
-        parse_error = False
+            points = 0
+            comments_count = 0
+            parse_error = False
         
-        # Step 1: Find span.score for points (e.g., "123 points")
-        score_span = soup.find('span', class_='score')
-        if score_span:
-            score_text = score_span.get_text()
-            points_match = re.search(r'(\d+)', score_text)
-            if points_match:
-                points = int(points_match.group(1))
+            # Step 1: Find span.score for points (e.g., "123 points")
+            score_span = soup.find('span', class_='score')
+            if score_span:
+                score_text = score_span.get_text()
+                points_match = re.search(r'(\d+)', score_text)
+                if points_match:
+                    points = int(points_match.group(1))
+                else:
+                    logging.error(f"HN parse error: Found score span but no number in '{score_text}' - {comments_url}")
+                    parse_error = True
             else:
-                logging.error(f"HN parse error: Found score span but no number in '{score_text}' - {comments_url}")
+                logging.error(f"HN parse error: Could not find span.score - {comments_url}")
                 parse_error = True
-        else:
-            logging.error(f"HN parse error: Could not find span.score - {comments_url}")
-            parse_error = True
         
-        # Step 2: From score position, find comments count in subline links
-        if score_span and not parse_error:
-            subline = score_span.find_parent('span', class_='subline') or score_span.find_parent('td', class_='subtext')
-            if subline:
-                links = subline.find_all('a')
-                for link in links:
-                    link_text = link.get_text()
-                    comments_match = re.search(r'(\d+)[\s\xa0]+comments?', link_text)
-                    if comments_match:
-                        comments_count = int(comments_match.group(1))
-                        break
-                
-                if comments_count == 0:
-                    # Check if it's "discuss" (0 comments)
+            # Step 2: From score position, find comments count in subline links
+            if score_span and not parse_error:
+                subline = score_span.find_parent('span', class_='subline') or score_span.find_parent('td', class_='subtext')
+                if subline:
+                    links = subline.find_all('a')
                     for link in links:
-                        if 'discuss' in link.get_text().lower():
-                            comments_count = 0
+                        link_text = link.get_text()
+                        comments_match = re.search(r'(\d+)[\s\xa0]+comments?', link_text)
+                        if comments_match:
+                            comments_count = int(comments_match.group(1))
                             break
-                    else:
-                        logging.error(f"HN parse error: Could not find comments count in subline - {comments_url}")
-                        parse_error = True
-            else:
-                logging.error(f"HN parse error: Could not find subline parent of score - {comments_url}")
-                parse_error = True
+                
+                    if comments_count == 0:
+                        # Check if it's "discuss" (0 comments)
+                        for link in links:
+                            if 'discuss' in link.get_text().lower():
+                                comments_count = 0
+                                break
+                        else:
+                            logging.error(f"HN parse error: Could not find comments count in subline - {comments_url}")
+                            parse_error = True
+                else:
+                    logging.error(f"HN parse error: Could not find subline parent of score - {comments_url}")
+                    parse_error = True
         
-        # Calculate discussion_importance_score: (points + comments) scaled to 0-100
-        raw_discussion_score = points + comments_count
-        discussion_importance_score = min(100, raw_discussion_score // 10)
+            # Calculate discussion_importance_score: (points + comments) scaled to 0-100
+            raw_discussion_score = points + comments_count
+            discussion_importance_score = min(100, raw_discussion_score // 10)
         
-        logging.info(f"{log_prefix} -> HN Stats: {points} points, {comments_count} comments, discussion_score: {discussion_importance_score}")
-    except Exception as e:
-        logging.warning(f"{log_prefix}Failed to extract HN stats from {comments_url}: {e}")
-        discussion_importance_score = 0
+            logging.info(f"{log_prefix} -> HN Stats: {points} points, {comments_count} comments, discussion_score: {discussion_importance_score}")
+        except Exception as e:
+            logging.warning(f"{log_prefix}Failed to extract HN stats from {comments_url}: {e}")
+            discussion_importance_score = 0
     
     # Combine topic and comments content
     if not topic_text and not comments_text:

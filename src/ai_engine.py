@@ -4,6 +4,7 @@ import logging
 import shutil
 import subprocess
 import tempfile
+import time
 
 KEYCHAIN_SERVICE = "inbrief-claude-oauth"
 
@@ -98,9 +99,16 @@ class AIEngine:
             cmd += ["--system-prompt", system_prompt]
         env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.oauth_token}
         env.pop("ANTHROPIC_API_KEY", None)  # make sure the subscription token is what gets used
-        with tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
-            proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only.",
-                                  capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
+        # A negative return code means the process was killed by a signal (e.g. -11 = SIGSEGV); those
+        # crashes are intermittent, so retry them with a short backoff. Ordinary CLI errors are not retried.
+        for attempt, delay in enumerate((2, 5, None)):
+            with tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
+                proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only.",
+                                      capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
+            if proc.returncode >= 0 or delay is None:
+                break
+            logging.warning(f"claude CLI crashed (signal {-proc.returncode}), retry {attempt + 1}/2 in {delay}s")
+            time.sleep(delay)
         if proc.returncode != 0:
             raise RuntimeError(f"claude CLI exited {proc.returncode}: {proc.stderr.strip()[:300]}")
         return proc.stdout
