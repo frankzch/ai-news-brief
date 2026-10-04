@@ -38,7 +38,16 @@ def _extract_json(text):
         start, end = text.find("{"), text.rfind("}")
         if start == -1 or end <= start:
             raise
-        return json.loads(text[start:end + 1])
+        candidate = text[start:end + 1]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            # Typically unescaped quotes inside long string values; repair rather than burn another LLM call.
+            from json_repair import repair_json
+            repaired = repair_json(candidate, return_objects=True)
+            if isinstance(repaired, dict) and repaired:
+                return repaired
+            raise
 
 
 class AIEngine:
@@ -103,7 +112,7 @@ class AIEngine:
         # crashes are intermittent, so retry them with a short backoff. Ordinary CLI errors are not retried.
         for attempt, delay in enumerate((2, 5, None)):
             with tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
-                proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only.",
+                proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only; escape any double quotes inside string values.",
                                       capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
             if proc.returncode >= 0 or delay is None:
                 break

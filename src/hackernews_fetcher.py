@@ -39,6 +39,61 @@ def _hn_stats_from_api(comments_url: str):
         return None
 
 
+def _hn_text_from_api(comments_url: str, max_comments: int = 40):
+    """Post body and top comments from HN's Firebase API: (self_text, comments_text).
+
+    Fallback for when the HTML item page is rate-limited (HTTP 419). Takes the first `max_comments`
+    comments in HN ranking order (top-level first, then one reply level); dead/deleted ones are dropped.
+    """
+    import requests
+    from bs4 import BeautifulSoup
+
+    m = re.search(r'[?&]id=(\d+)', comments_url or '')
+    if not m:
+        return '', ''
+    base = 'https://hacker-news.firebaseio.com/v0/item/{}.json'
+
+    def get_item(item_id):
+        try:
+            resp = requests.get(base.format(item_id), timeout=10)
+            resp.raise_for_status()
+            return resp.json() or {}
+        except Exception as e:
+            logging.debug(f"HN API item {item_id} failed: {e}")
+            return {}
+
+    def clean(html):
+        return BeautifulSoup(html or '', 'html.parser').get_text('\n').strip()
+
+    try:
+        story = get_item(m.group(1))
+        self_text = clean(story.get('text'))
+        kids = (story.get('kids') or [])[:max_comments]
+        if not kids:
+            return self_text, ''
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            top = list(pool.map(get_item, kids))
+            replies = []
+            for c in top:
+                replies.extend((c.get('kids') or [])[:2])
+            replies = replies[:max(0, max_comments - len(top))]
+            reply_items = list(pool.map(get_item, replies)) if replies else []
+        by_id = {c.get('id'): c for c in reply_items}
+        lines = []
+        for c in top:
+            if c.get('deleted') or c.get('dead') or not c.get('text'):
+                continue
+            lines.append(f"{c.get('by', '?')}: {clean(c['text'])}")
+            for rid in (c.get('kids') or [])[:2]:
+                r = by_id.get(rid)
+                if r and not (r.get('deleted') or r.get('dead')) and r.get('text'):
+                    lines.append(f"  ↳ {r.get('by', '?')}: {clean(r['text'])}")
+        return self_text, '\n\n'.join(lines)
+    except Exception as e:
+        logging.warning(f"HN API text lookup failed for {comments_url}: {e}")
+        return '', ''
+
+
 def _fetch_hackernews_content(topic_url: str, comments_url: str, page=None, log_prefix: str = '') -> tuple:
     """
     Fetch and process Hacker News content from both topic and comments pages.
@@ -80,6 +135,16 @@ def _fetch_hackernews_content(topic_url: str, comments_url: str, page=None, log_
     else:
         comments_text = ContentProcessor.fetch_and_extract(comments_url) or ""
     
+    # HN throttles the HTML pages (419); fall back to the API for the post body (Ask/Show HN) and comments
+    if not comments_text or not topic_text:
+        api_self_text, api_comments = _hn_text_from_api(comments_url)
+        if not comments_text and api_comments:
+            comments_text = api_comments
+            logging.info(f"{log_prefix}Using {len(api_comments)} chars of HN comments from the API")
+        if not topic_text and api_self_text:
+            topic_text = api_self_text
+            logging.info(f"{log_prefix}Using HN post body from the API ({len(api_self_text)} chars)")
+
     # Extract points and comments count from comments page HTML
     discussion_importance_score = 0
     points = 0
