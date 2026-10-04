@@ -1,12 +1,23 @@
 import os
 import json
 import logging
+import random
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
 
 KEYCHAIN_SERVICE = "inbrief-claude-oauth"
+
+CLI_RETRY_DELAYS = (5, 20)   # seconds before retry 1 and 2 after a crash/timeout (jittered +/-25%)
+CLI_RETRY_JITTER = 0.25
+CLI_BREAKER_THRESHOLD = 3    # consecutive crashes/timeouts before a cooldown
+CLI_BREAKER_COOLDOWN = 60    # seconds
+
+
+class SummarizationError(Exception):
+    """The LLM call behind a summary failed for good (after retries); the item was not summarized."""
 
 
 def _read_oauth_token():
@@ -72,6 +83,10 @@ class AIEngine:
                 api_key=os.environ.get("DEEPSEEK_API_KEY") or config['api_key'],
                 base_url=config['base_url']
             )
+        self._sleep = time.sleep  # injectable so tests don't wait
+        self._cli_sem = threading.BoundedSemaphore(max(1, int(config.get('claude_cli_max_concurrency', 3))))
+        self._breaker_lock = threading.Lock()
+        self._consecutive_cli_failures = 0
         # Load AI timeout from fetching config
         from config_loader import ConfigLoader
         fetching_config = ConfigLoader.get_instance().get('fetching', {})
@@ -108,19 +123,45 @@ class AIEngine:
             cmd += ["--system-prompt", system_prompt]
         env = {**os.environ, "CLAUDE_CODE_OAUTH_TOKEN": self.oauth_token}
         env.pop("ANTHROPIC_API_KEY", None)  # make sure the subscription token is what gets used
-        # A negative return code means the process was killed by a signal (e.g. -11 = SIGSEGV); those
-        # crashes are intermittent, so retry them with a short backoff. Ordinary CLI errors are not retried.
-        for attempt, delay in enumerate((2, 5, None)):
-            with tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
-                proc = subprocess.run(cmd, input=user_content + "\n\nRespond with a single JSON object only; escape any double quotes inside string values.",
-                                      capture_output=True, text=True, timeout=timeout, env=env, cwd=cwd)
-            if proc.returncode >= 0 or delay is None:
-                break
-            logging.warning(f"claude CLI crashed (signal {-proc.returncode}), retry {attempt + 1}/2 in {delay}s")
-            time.sleep(delay)
-        if proc.returncode != 0:
-            raise RuntimeError(f"claude CLI exited {proc.returncode}: {proc.stderr.strip()[:300]}")
-        return proc.stdout
+        payload = user_content + "\n\nRespond with a single JSON object only; escape any double quotes inside string values."
+        # Signal crashes (negative return code, e.g. -11 = SIGSEGV) and timeouts are usually transient
+        # (machine under pressure), so retry them after a jittered backoff. Ordinary CLI errors are not retried.
+        for attempt in range(len(CLI_RETRY_DELAYS) + 1):
+            self._breaker_wait()
+            try:
+                with self._cli_sem, tempfile.TemporaryDirectory() as cwd:  # empty cwd: no CLAUDE.md / project settings picked up
+                    proc = subprocess.run(cmd, input=payload, capture_output=True, text=True,
+                                          timeout=timeout, env=env, cwd=cwd)
+            except subprocess.TimeoutExpired:
+                reason = f"timed out after {timeout}s"
+                error = RuntimeError(f"claude CLI {reason}")
+            else:
+                if proc.returncode == 0:
+                    self._breaker_record(ok=True)
+                    return proc.stdout
+                error = RuntimeError(f"claude CLI exited {proc.returncode}: {proc.stderr.strip()[:300]}")
+                if proc.returncode > 0:
+                    raise error
+                reason = f"killed by signal {-proc.returncode}"
+            self._breaker_record(ok=False)
+            if attempt == len(CLI_RETRY_DELAYS):
+                raise error
+            delay = CLI_RETRY_DELAYS[attempt] * random.uniform(1 - CLI_RETRY_JITTER, 1 + CLI_RETRY_JITTER)
+            logging.warning(f"claude CLI {reason}, retry {attempt + 1}/{len(CLI_RETRY_DELAYS)} in {delay:.1f}s")
+            self._sleep(delay)
+
+    def _breaker_record(self, ok):
+        with self._breaker_lock:
+            self._consecutive_cli_failures = 0 if ok else self._consecutive_cli_failures + 1
+
+    def _breaker_wait(self):
+        """After a burst of consecutive crashes/timeouts, pause once (blocking other callers) before trying again."""
+        with self._breaker_lock:
+            if self._consecutive_cli_failures >= CLI_BREAKER_THRESHOLD:
+                logging.warning(f"claude CLI failed {self._consecutive_cli_failures} times in a row, "
+                                f"pausing {CLI_BREAKER_COOLDOWN}s")
+                self._consecutive_cli_failures = 0
+                self._sleep(CLI_BREAKER_COOLDOWN)
 
     def _get_prompt_for_category(self, category: str) -> str:
         """
@@ -197,11 +238,17 @@ Reminder: You MUST output valid JSON in the exact format specified in your instr
         # 原文过短允许省略长摘要。china_blocked 或 score=0 的文章下游本就会丢弃，无需重试。
         long_required = len(text or '') >= 1000
         last_data = None
+        last_error = None
         for attempt in range(2):
             try:
                 data = self._complete_json(system_prompt, user_content, 0.3, timeout)
             except Exception as e:
                 logging.error(f"AI Summarization failed (attempt {attempt + 1}/2): {e}")
+                last_error = e
+                # claude CLI crashes/timeouts were already retried with backoff in _claude_cli; re-asking
+                # at once would only hit the same fault. Malformed JSON output is worth one more ask.
+                if self.backend == 'claude_cli' and not isinstance(e, ValueError):
+                    break
                 continue
 
             last_data = data
@@ -218,7 +265,7 @@ Reminder: You MUST output valid JSON in the exact format specified in your instr
             )
 
         if last_data is None:
-            return '', '', '', '', 0, [], '', '', False
+            raise SummarizationError(str(last_error)) from last_error
 
         tags = last_data.get('tags', [])
         if len(tags) > 5:

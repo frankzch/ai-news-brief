@@ -12,7 +12,7 @@ from config_loader import ConfigLoader
 from user_db import UserDatabase
 from vector_store import VectorStore
 from content_processor import ContentProcessor
-from ai_engine import AIEngine
+from ai_engine import AIEngine, SummarizationError
 from fetch_stats import FetchStats
 from rss_fetcher import RSSFetcher
 
@@ -51,6 +51,17 @@ def cleanup_old_articles():
 
     # 清理过期的热点标签统计
     user_db.cleanup_old_tag_stats(tag_stats_retention_days)
+
+SUMMARIZE_RETRY_DELAY = timedelta(minutes=30)
+
+
+def _handle_summarize_failure(user_db, fetch_stats, rss_url, rss_desc, url, source_id, error, log_prefix=''):
+    """Count a summarization failure and re-queue the URL so the next run retries it instead of dropping it."""
+    next_fetch_at = datetime.now(timezone.utc) + SUMMARIZE_RETRY_DELAY
+    user_db.record_fetched_url(url, source_id, next_fetch_at=next_fetch_at)
+    fetch_stats.record_failure(rss_url, rss_desc, 'summarize_failed')
+    logging.warning(f"{log_prefix}Summarization failed, will retry after {next_fetch_at.strftime('%m-%d %H:%M')} UTC: {url} ({error})")
+
 
 def _process_single_entry(entry, sources, source_map, user_db, ai_engine, vector_store,
                            fetch_stats, min_upvotes, min_comments, cutoff_date,
@@ -363,7 +374,11 @@ def _process_single_entry(entry, sources, source_map, user_db, ai_engine, vector
     
     # Summarization
     logging.info(f"{log_prefix}Summarizing content: {title[:50]}... (category: {source_category})")
-    summary_en, summary_zh, long_summary_en, long_summary_zh, ai_importance_score, tags, title_en, title_zh, china_blocked = ai_engine.summarize_content(full_text, title=title, category=source_category)
+    try:
+        summary_en, summary_zh, long_summary_en, long_summary_zh, ai_importance_score, tags, title_en, title_zh, china_blocked = ai_engine.summarize_content(full_text, title=title, category=source_category)
+    except SummarizationError as e:
+        _handle_summarize_failure(user_db, fetch_stats, rss_url, rss_desc, url, source_id, e, log_prefix)
+        return 0
 
     if china_blocked:
         logging.warning(f"{log_prefix}China compliance blocked. Skipping. URL: {url}")
