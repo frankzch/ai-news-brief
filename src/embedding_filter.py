@@ -4,28 +4,91 @@ Uses the all-MiniLM-L6-v2 model for efficient local embedding generation.
 """
 
 import logging
+import os
 from typing import List, Dict, Any
 import numpy as np
 
+MODEL_REPO = "sentence-transformers/all-MiniLM-L6-v2"
+
+# Files sentence-transformers needs for a PyTorch load. snapshot_download treats every
+# repo file (incl. the unused TF/Rust/ONNX weights) as required unless filtered, so an
+# offline cache that lacks them is reported as incomplete.
+MODEL_ALLOW_PATTERNS = [
+    "*.json",
+    "*.txt",
+    "1_Pooling/*",
+    "model.safetensors",
+]
+
 # Lazy-load the model to avoid startup delay
 _model = None
+_load_error: "Exception | None" = None
+
+
+class EmbeddingModelUnavailable(RuntimeError):
+    """The embedding model could not be loaded (not cached and/or Hub unreachable)."""
+
+
+def hf_offline_enabled() -> bool:
+    """True if HF_HUB_OFFLINE is set to a truthy value in the environment."""
+    return os.environ.get("HF_HUB_OFFLINE", "").strip().upper() in {"1", "ON", "YES", "TRUE"}
+
+
+def reset_model_failure():
+    """Forget a previous load failure so the next call retries (call at the start of a run)."""
+    global _load_error
+    _load_error = None
+
+
+def _resolve_model_path() -> str:
+    """Find the model snapshot: local cache first, network only if that fails and we're online."""
+    from huggingface_hub import snapshot_download
+
+    try:
+        return snapshot_download(
+            MODEL_REPO, local_files_only=True, allow_patterns=MODEL_ALLOW_PATTERNS
+        )
+    except Exception as local_err:
+        if hf_offline_enabled():
+            raise EmbeddingModelUnavailable(
+                f"Embedding model {MODEL_REPO} is not usable from the local cache and "
+                f"HF_HUB_OFFLINE is set, so it cannot be downloaded: {local_err}. "
+                "Unset HF_HUB_OFFLINE once to download it."
+            ) from local_err
+        logging.info(f"Embedding model not in local cache ({local_err}); downloading")
+        try:
+            return snapshot_download(MODEL_REPO, allow_patterns=MODEL_ALLOW_PATTERNS)
+        except Exception as net_err:
+            raise EmbeddingModelUnavailable(
+                f"Embedding model {MODEL_REPO} is not cached and could not be downloaded: {net_err}"
+            ) from net_err
+
 
 def _get_model():
-    """Lazy load the sentence-transformer model."""
-    global _model
-    if _model is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            from huggingface_hub import snapshot_download
-            local_path = snapshot_download("sentence-transformers/all-MiniLM-L6-v2", local_files_only=False)
-            _model = SentenceTransformer(local_path)
-            logging.info("Loaded embedding model: all-MiniLM-L6-v2")
-        except ImportError:
-            logging.error(
-                "sentence-transformers not installed. "
-                "Run: pip install sentence-transformers"
-            )
-            raise
+    """Lazy load the sentence-transformer model.
+
+    Raises EmbeddingModelUnavailable if it cannot be loaded. The failure is remembered
+    until reset_model_failure() so callers don't retry a slow load for every article.
+    """
+    global _model, _load_error
+    if _model is not None:
+        return _model
+    if _load_error is not None:
+        raise _load_error
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        logging.error(
+            "sentence-transformers not installed. "
+            "Run: pip install sentence-transformers"
+        )
+        raise
+    try:
+        _model = SentenceTransformer(_resolve_model_path())
+    except EmbeddingModelUnavailable as e:
+        _load_error = e
+        raise
+    logging.info("Loaded embedding model: all-MiniLM-L6-v2")
     return _model
 
 

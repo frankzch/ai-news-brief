@@ -207,6 +207,11 @@ Guests get up to 3 items per request; sign up free at [inbrief.info](https://inb
 - Summaries are stored bilingually (`*_en` / `*_zh` columns). If you only need one language you can simply ignore the other.
 - The `data/` directory holds runtime state (browser profile, cookies, daily flags) and is never committed.
 
+## Troubleshooting
+
+**`Error adding article ... to vector store` / "cached snapshot ... is incomplete" / "N article(s) were saved without embeddings"**
+Semantic dedup needs the `sentence-transformers/all-MiniLM-L6-v2` model. It loads from the local Hugging Face cache first and only downloads if it isn't cached. If `HF_HUB_OFFLINE=1` is set in the environment the scheduler was started from (the pipeline logs a warning at startup when it is), downloads are disabled, so the model must already be cached: unset the variable for one run to download it. Articles saved without a vector are embedded automatically at the start of the next successful run (last 14 days, up to 500 per run).
+
 ## FAQ
 
 **How is this different from an RSS reader?**

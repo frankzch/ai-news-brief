@@ -5,8 +5,11 @@ Replaces ChromaDB with PostgreSQL + pgvector extension.
 
 import logging
 import json
+import threading
 from typing import List, Dict, Optional, Any
 import numpy as np
+
+from embedding_filter import EmbeddingModelUnavailable
 
 
 def _get_embedding_model():
@@ -38,6 +41,11 @@ class VectorStore:
         self.db_url = db_url
         self._model = None
         self._pool = None
+        # Embedding failures this run (pipelines run in parallel threads, hence the lock).
+        # Reported once per run via report_embedding_failures() instead of once per article.
+        self._embed_failures = 0
+        self._embed_failure_reason = None
+        self._failure_lock = threading.Lock()
     
     def _get_pool(self):
         """Get connection pool (reuse UserDatabase pool if available)."""
@@ -74,6 +82,32 @@ class VectorStore:
         embeddings = model.encode(texts, convert_to_numpy=True)
         return embeddings.tolist()
     
+    def _record_embed_failure(self, err: Exception):
+        """Count an article that couldn't be embedded; logged once per run, not per article."""
+        with self._failure_lock:
+            self._embed_failures += 1
+            self._embed_failure_reason = str(err)
+
+    def reset_embedding_failures(self):
+        """Start a new run: clear the failure count and let the model load be retried."""
+        from embedding_filter import reset_model_failure
+        reset_model_failure()
+        with self._failure_lock:
+            self._embed_failures = 0
+            self._embed_failure_reason = None
+
+    def report_embedding_failures(self) -> int:
+        """Log a single error summarising this run's embedding failures. Returns the count."""
+        with self._failure_lock:
+            count, reason = self._embed_failures, self._embed_failure_reason
+        if count:
+            logging.error(
+                f"{count} article(s) were saved/checked without embeddings this run "
+                f"(semantic dedup skipped for them); they will be backfilled on the next "
+                f"successful run. Reason: {reason}"
+            )
+        return count
+
     def _build_document(self, summary: str, tags: List[str]) -> str:
         """Build document string for embedding."""
         tags_str = ", ".join(tags) if tags else ""
@@ -124,7 +158,11 @@ class VectorStore:
                 raise e
             finally:
                 self._put_conn(conn)
-                
+
+        except EmbeddingModelUnavailable as e:
+            self._record_embed_failure(e)
+            logging.debug(f"Embedding unavailable for article {article_id}: {e}")
+            return False
         except Exception as e:
             logging.error(f"Error adding article {article_id} to vector store: {e}")
             return False
@@ -199,6 +237,57 @@ class VectorStore:
         except Exception:
             return 0
     
+    # ==================== Backfill ====================
+
+    def backfill_missing_vectors(self, limit: int = 500, days: int = 14) -> Dict[str, int]:
+        """Embed recent articles that have no vector (e.g. saved while the model was unavailable).
+
+        An article with no row in article_vectors is the backfill queue, so no extra state is
+        kept. Newest articles first, capped at `limit`, so a long outage can't stall a run.
+        """
+        result = {'missing': 0, 'added': 0}
+        try:
+            conn = self._get_conn()
+            try:
+                cursor = conn.cursor()
+                cursor.execute(f'''
+                    SELECT a.id, COALESCE(NULLIF(a.summary_en, ''), a.summary_zh, ''),
+                           a.tags, a.category, COALESCE(s.name, '')
+                    FROM articles a
+                    LEFT JOIN {self.TABLE_NAME} v ON v.article_id = a.id
+                    LEFT JOIN rss_sources s ON s.id = a.rss_source_id
+                    WHERE v.article_id IS NULL
+                      AND COALESCE(a.published_at, a.created_at) >= NOW() - (%s * INTERVAL '1 day')
+                    ORDER BY COALESCE(a.published_at, a.created_at) DESC
+                    LIMIT %s
+                ''', (days, limit))
+                rows = cursor.fetchall()
+                conn.commit()
+            finally:
+                self._put_conn(conn)
+        except Exception as e:
+            logging.error(f"Vector backfill: could not list articles without vectors: {e}")
+            return result
+
+        result['missing'] = len(rows)
+        if not rows:
+            return result
+
+        for article_id, summary, raw_tags, category, source in rows:
+            try:
+                tags = json.loads(raw_tags) if raw_tags else []
+            except (TypeError, ValueError):
+                tags = []
+            if not summary:
+                continue
+            if self.add_article(article_id, summary, tags, source, category or 'news'):
+                result['added'] += 1
+            elif self._embed_failures:
+                # Model unavailable: stop early, the end-of-run report covers it.
+                break
+        logging.info(f"Vector backfill: {result['added']}/{result['missing']} articles embedded")
+        return result
+
     # ==================== Semantic Deduplication ====================
     
     def find_similar_articles(self, summary: str, tags: List[str] = None, 
@@ -260,6 +349,10 @@ class VectorStore:
             finally:
                 self._put_conn(conn)
                 
+        except EmbeddingModelUnavailable as e:
+            self._record_embed_failure(e)
+            logging.debug(f"Embedding unavailable, skipping semantic dedup: {e}")
+            return []
         except Exception as e:
             logging.error(f"Error finding similar articles: {e}")
             return []

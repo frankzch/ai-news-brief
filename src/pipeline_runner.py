@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 from config_loader import ConfigLoader
 from user_db import UserDatabase
 from vector_store import VectorStore
+from embedding_filter import hf_offline_enabled
 from content_processor import ContentProcessor
 from ai_engine import AIEngine
 from fetch_stats import FetchStats
@@ -833,6 +834,14 @@ def run_pipeline():
     
     ai_engine = AIEngine(llm_config)
     vector_store = VectorStore()
+    vector_store.reset_embedding_failures()
+    if hf_offline_enabled():
+        logging.warning(
+            "HF_HUB_OFFLINE is set: embedding model downloads are disabled; "
+            "the model must already be in the local Hugging Face cache."
+        )
+    # Embed articles saved without a vector by earlier runs (model was unavailable)
+    vector_store.backfill_missing_vectors()
     
     # 共享统计实例，所有采集管道共用一个报告
     fetch_stats = FetchStats()
@@ -884,6 +893,7 @@ def run_pipeline():
 
     # 6. 统一输出所有采集管道的统计报告
     fetch_stats.log_report()
+    vector_store.report_embedding_failures()
     
     logging.info("All pipelines finished.")
 
