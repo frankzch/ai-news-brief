@@ -728,7 +728,7 @@ def fetch_twitter_posts(twitter_sources, user_db, ai_engine, vector_store, fetch
                     full_text = full_text[:max_input_chars]
                 
                 # LSH 去重
-                content_hash = compute_simhash(full_text)
+                content_hash = compute_simhash(full_text, label=f"{title} {tweet_url}")
                 if user_db.get_similar_article(content_hash):
                     logging.debug(f"{log_prefix}LSH duplicate: {title[:50]}")
                     reason = 'lsh_duplicate'

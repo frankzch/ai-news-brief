@@ -343,7 +343,7 @@ def _process_single_entry(entry, sources, source_map, user_db, ai_engine, vector
     user_db.record_fetched_url(url, source_id)
     
     # LSH Deduplication
-    content_hash = compute_simhash(full_text)
+    content_hash = compute_simhash(full_text, label=f"{title} {url}")
     similar_article = user_db.get_similar_article(content_hash)
     if similar_article:
         logging.warning(f"{log_prefix}Skipping duplicate content (LSH): {title}")
