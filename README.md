@@ -2,7 +2,7 @@
 
 **English** | [中文](README.zh-CN.md)
 
-An open-source, self-hostable **AI news aggregator** that turns 94 sources — AI lab blogs, Hacker News, Reddit, 35 AI builders on X, 13 YouTube channels (via transcripts) and GitHub Trending — into a deduplicated **daily AI digest** with English and Chinese summaries. It is the engine behind [inbrief.info](https://inbrief.info); if you just want to read the digest, use the site or the [agent skill](https://github.com/frankzch/ai-news-skill) instead of self-hosting.
+An open-source, self-hostable **AI news aggregator** that turns 370+ sources — AI lab blogs, Hacker News, Reddit, ~310 AI builders on X, 13 YouTube channels (via transcripts) and GitHub Trending — into a deduplicated **daily AI digest** with English and Chinese summaries. It is the engine behind [inbrief.info](https://inbrief.info); if you just want to read the digest, use the site or the [agent skill](https://github.com/frankzch/ai-news-skill) instead of self-hosting.
 
 
 
@@ -32,7 +32,7 @@ scheduler (main.py)
 
 ## Source catalog
 
-The production instance at [inbrief.info](https://inbrief.info) currently tracks **94 sources** across four categories. The engine ships with an empty source table — use this catalog as a starting point and add the ones you want via `admin_rss.py`.
+The production instance at [inbrief.info](https://inbrief.info) currently tracks **370+ sources** across four categories. The engine ships with an empty source table — use this catalog as a starting point and add the ones you want via `admin_rss.py`.
 
 ### 📰 News & blogs — 16 RSS feeds
 
@@ -56,7 +56,7 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 | Machine Learning Mastery | `https://machinelearningmastery.com/feed/` |
 
 
-### 💬 Discussion — Hacker News, 16 Reddit sources, 47 X sources
+### 💬 Discussion — Hacker News, 16 Reddit sources, 320+ X sources
 
 **Hacker News** — front page via `https://news.ycombinator.com/rss`, with full comment-thread extraction and engagement gates (min upvotes / comments).
 
@@ -64,7 +64,7 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 
 **Reddit — 5 keyword searches**: `llm`, `codex`, `prompt ai`, `agent ai`, `skill ai`
 
-**X.com — 35 KOL accounts** (high-engagement posts from their timelines):
+**X.com — ~310 AI accounts** in an X List, read as one timeline; reposts by list members count as a heat signal. Seeded with the 35 KOLs below plus the accounts most cited by the AINews newsletter, and growing automatically: authors whose posts repeatedly score high are added to the list. Seed KOLs:
 
 | | | | |
 |---|---|---|---|
@@ -77,6 +77,10 @@ The production instance at [inbrief.info](https://inbrief.info) currently tracks
 | Matt Turck ([@mattturck](https://x.com/mattturck)) | Nan Yu ([@thenanyu](https://x.com/thenanyu)) | Nikunj Kothari ([@nikunj](https://x.com/nikunj)) | Josh Woodward ([@joshwoodward](https://x.com/joshwoodward)) |
 | Ryo Lu ([@ryolu_](https://x.com/ryolu_)) | Thariq ([@trq212](https://x.com/trq212)) | Aditya Agarwal ([@adityaag](https://x.com/adityaag)) | Madhu Guru ([@realmadhuguru](https://x.com/realmadhuguru)) |
 | Claude ([@claudeai](https://x.com/claudeai)) | ClaudeDevs ([@ClaudeDevs](https://x.com/ClaudeDevs)) | Google Labs ([@GoogleLabs](https://x.com/GoogleLabs)) | |
+
+**X.com — 2 site-wide high-engagement searches** (AI keywords with `min_faves:1000` in English / `min_faves:200` in Chinese), so viral AI posts from accounts outside the list are not missed.
+
+*(The X List and site-wide searches currently run in production only; this open-source release collects per-account timelines and keyword searches.)*
 
 **X.com — 12 keyword searches**: `AI`, `Anthropic`, `OpenAI`, `ChatGPT`, `Gemini`, `LLM`, `claude code`, `codex`, `OpenClaw`, `prompt ai`, `agent ai`, `skill ai`
 

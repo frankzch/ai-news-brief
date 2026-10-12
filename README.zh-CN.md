@@ -2,7 +2,7 @@
 
 [English](README.md) | **中文**
 
-开源、可自建的 **AI 新闻聚合器**：把 94 个信息源——AI 大厂博客、Hacker News、Reddit、X 上 35 位 AI 从业者、13 个 YouTube 频道（基于字幕）和 GitHub Trending——整理成去重后的**每日 AI 资讯摘要**，中英双语。它是 [inbrief.info](https://inbrief.info) 背后的引擎；只想看摘要的话，直接用网站或 [Agent Skill](https://github.com/frankzch/ai-news-skill)，不必自己部署。
+开源、可自建的 **AI 新闻聚合器**：把 370+ 个信息源——AI 大厂博客、Hacker News、Reddit、X 上约 310 位 AI 从业者、13 个 YouTube 频道（基于字幕）和 GitHub Trending——整理成去重后的**每日 AI 资讯摘要**，中英双语。它是 [inbrief.info](https://inbrief.info) 背后的引擎；只想看摘要的话，直接用网站或 [Agent Skill](https://github.com/frankzch/ai-news-skill)，不必自己部署。
 
 它持续从 RSS、Hacker News、Reddit、X（Twitter）、YouTube 和 GitHub Trending 拉取 AI 相关内容，逐条经过 LLM 流水线处理——相关性过滤、中英双语摘要、标签提取、重要性评分——再做两级去重，最终把精选结果写入 PostgreSQL。
 
@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/4c2a209e-46dd-422a-ae8f-82d92c73f68c
 
 ## 信息源目录
 
-[inbrief.info](https://inbrief.info) 生产实例目前追踪 **94 个信息源**，分四个类目。引擎本身不预置任何源——可以参考这份目录，用 `admin_rss.py` 添加你需要的部分。
+[inbrief.info](https://inbrief.info) 生产实例目前追踪 **370+ 个信息源**，分四个类目。引擎本身不预置任何源——可以参考这份目录，用 `admin_rss.py` 添加你需要的部分。
 
 ### 📰 新闻与博客 — 16 个 RSS 源
 
@@ -52,7 +52,7 @@ https://github.com/user-attachments/assets/4c2a209e-46dd-422a-ae8f-82d92c73f68c
 | Machine Learning Mastery | `https://machinelearningmastery.com/feed/` |
 
 
-### 💬 社媒讨论 — Hacker News、16 个 Reddit 源、47 个 X 源
+### 💬 社媒讨论 — Hacker News、16 个 Reddit 源、320+ 个 X 源
 
 **Hacker News** — 首页 `https://news.ycombinator.com/rss`，抓取完整评论区，按点赞/评论数设互动门槛。
 
@@ -60,7 +60,7 @@ https://github.com/user-attachments/assets/4c2a209e-46dd-422a-ae8f-82d92c73f68c
 
 **Reddit — 5 个关键词搜索**：`llm`、`codex`、`prompt ai`、`agent ai`、`skill ai`
 
-**X.com — 35 个 KOL 账号**（抓取其时间线上的高互动帖）：
+**X.com — 约 310 个 AI 账号**：放在一个 X List 里按一条时间线读取，List 成员的转发也计入热度信号。初始名单是下面 35 位 KOL 加上 AINews 日报历史上引用最多的账号，之后自动扩充：帖子反复获得高分的作者会被自动加入 List。初始 KOL：
 
 | | | | |
 |---|---|---|---|
@@ -73,6 +73,10 @@ https://github.com/user-attachments/assets/4c2a209e-46dd-422a-ae8f-82d92c73f68c
 | Matt Turck ([@mattturck](https://x.com/mattturck)) | Nan Yu ([@thenanyu](https://x.com/thenanyu)) | Nikunj Kothari ([@nikunj](https://x.com/nikunj)) | Josh Woodward ([@joshwoodward](https://x.com/joshwoodward)) |
 | Ryo Lu ([@ryolu_](https://x.com/ryolu_)) | Thariq ([@trq212](https://x.com/trq212)) | Aditya Agarwal ([@adityaag](https://x.com/adityaag)) | Madhu Guru ([@realmadhuguru](https://x.com/realmadhuguru)) |
 | Claude ([@claudeai](https://x.com/claudeai)) | ClaudeDevs ([@ClaudeDevs](https://x.com/ClaudeDevs)) | Google Labs ([@GoogleLabs](https://x.com/GoogleLabs)) | |
+
+**X.com — 2 个全站高赞搜索**（AI 关键词，英文 `min_faves:1000`、中文 `min_faves:200`），List 之外账号的爆款 AI 帖也不会漏掉。
+
+*（X List 与全站高赞搜索目前只在生产实例运行；本开源版本采集单个账号时间线与关键词搜索。）*
 
 **X.com — 12 个关键词搜索**：`AI`、`Anthropic`、`OpenAI`、`ChatGPT`、`Gemini`、`LLM`、`claude code`、`codex`、`OpenClaw`、`prompt ai`、`agent ai`、`skill ai`
 
